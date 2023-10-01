@@ -1,85 +1,67 @@
-import numpy as np
 from typing import Union, Callable
+import numpy as np
 from interval import Interval
+from aenum import (Enum,
+                   NoAlias)  # solves the issue with non-unique values of the Enum members
+
+
+class F(Enum, settings=NoAlias):
+    """
+    Enumeration of functions and their corresponding
+    itervals in format [lower_bound, upper_bound, step].
+    """
+    sphere = [-5, 5, 0.1]
+    schwefel = [-500, 500, 5]
+    rosenbrock = [-10, 10, 0.05]  # [-2.048, 2.048]
+    rastrigin = [-5.12, 5.12, 0.1]
+    griewank = [-10, 10, 0.1]  # [-600, 600]
+    levy = [-10, 10, 0.1]
+    michalewicz = [0, np.pi, np.pi/100]
+    zakharov = [-10, 10, 0.1]
+    ackley = [-3, 3, 0.05]
+
+    def __iter__(self):
+        """
+        Example: 
+        ```
+        for f in F:  
+          print(f)
+          print(f"{f.name} {f.value})
+        ```
+        """
+        return iter(list(F))
 
 
 class Function:
-
     @staticmethod
-    def get_interval(function: str, step) -> Interval:
+    def get_interval(function: F) -> Interval:
         """
-        Get the interval (domain) for a specified mathematical function.
+        Get an interval (lower bound, upper bound, and step) for the given function.
 
-        Parameters:
-        - function (str): The name of the mathematical function.
-        - step: The step size for the interval.
+        Args:
+            function (F): A function object of type 'F' for which to retrieve the interval.
 
         Returns:
-        - Interval: An Interval object representing the domain of the function.
-
-        Supported functions and their intervals:
-        - 'sphere': [0, π, π/100]
-        - 'schwefel': [-500, 500, 5]
-        - 'rosenbrock': [-10, 10, 0.05]  # [-2.048, 2.048]
-        - 'rastrigin': [-5.12, 5.12, 0.1]
-        - 'griewank':  [-10, 10, 0.1]  # [-600, 600]
-        - 'levy': [-10, 10, 0.1]
-        - 'michalewicz': [0, π, π/100]
-        - 'zakharov': [-10, 10, 0.1]
-        - 'ackley': [-3, 3, 0.1]  # [-32.768, 32.768]
+            Interval: An Interval object representing the lower bound, upper bound,
+                      and step size of the function.
 
         Raises:
-        - ValueError: If the requested function is not found in the supported functions.
+            ValueError: If the input 'function' is not an instance of 'F'.
         """
-        functions = {
-            'sphere': [0, np.pi, np.pi/100],
-            'schwefel': [-500, 500, 5],
-            'rosenbrock': [-10, 10, 0.05],  # [-2.048, 2.048]
-            'rastrigin': [-5.12, 5.12, 0.1],
-            'griewank':  [-10, 10, 0.1],  # [-600, 600]
-            'levy': [-10, 10, 0.1],
-            'michalewicz': [0, np.pi, np.pi/100],
-            'zakharov': [-10, 10, 0.1],
-            'ackley': [-3, 3, 0.1],  # [-32.768, 32.768]
-        }
-        if function in functions:
-            lb, ub, step = functions[function]
+        if isinstance(function, F):
+            lb, ub, step = function.value
             return Interval(lb, ub, step)
         else:
             raise ValueError(f"Function '{function}' not found.")
 
     @staticmethod
-    def get(function_name: str) -> Callable:
-        """
-        Get a callable mathematical function by name.
-
-        Parameters:
-        - function_name (str): The name of the mathematical function to retrieve.
-
-        Returns:
-        - Callable: A callable function that takes an array-like input and computes the function's value.
-
-        Supported function names:
-        - 'sphere': Sphere Function
-        - 'schwefel': Schwefel Function
-        - 'rosenbrock': Rosenbrock Function
-        - 'rastrigin': Rastrigin Function
-        - 'griewank': Griewank Function
-        - 'levy': Levy Function
-        - 'michalewicz': Michalewicz Function
-        - 'zakharov': Zakharov Function
-        - 'ackley': Ackley Function
-        - see https://www.sfu.ca/~ssurjano/optimization.html for details
-
-        Raises:
-        - ValueError: If the requested function is not found or not callable.
-        """
-        function = getattr(Function, str.lower(function_name), None)
+    def get(function: F) -> Callable:
+        function = getattr(Function, str.lower(function.name), None)
         if function is not None and callable(function):
             return lambda x: function(x)
         else:
             raise ValueError(
-                f"Function '{function_name}' not found or not callable.")
+                f"Function '{function.name}' not found or not callable.")
 
     @staticmethod
     def sphere(xx: Union[np.ndarray, list]) -> float:

@@ -23,6 +23,3 @@ class Point:
             return getattr(self, attr_name)
         else:
             raise StopIteration
-
-    def __call__(self) -> Tuple[float, float, float]:
-        return (self.x, self.y, self.z)
