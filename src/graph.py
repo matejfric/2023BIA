@@ -8,6 +8,7 @@ from solution import Optimizer, Opt
 
 
 class Graph:
+
     def __init__(self, interval: Interval, fun: Callable):
         lb = interval.lb
         ub = interval.ub
@@ -80,14 +81,15 @@ class Graph:
                                c='black', label='History individuals', zorder=4)
 
                 # Plot current point (except the last frame)
+                current_individual_label = 'Current Individual'
                 if frame < len(points_to_animate) - 1:
                     current_point = points_to_animate[frame + 1]
                     ax.scatter(*current_point, s=20, c='red',
-                               label='Current individual', zorder=4)
+                               label=current_individual_label, zorder=4)
                 else:
                     current_point = points_to_animate[frame]
                     ax.scatter(*current_point, s=20, c='red',
-                               label='Current individual', zorder=4)
+                               label=current_individual_label, zorder=4)
 
                 # Redraw labels and legend
                 ax.set_xlabel('x')
@@ -161,14 +163,15 @@ class Graph:
                                c='black', label='History individuals', zorder=4)
 
                 # Plot current point (except the last frame)
+                current_individual_label = 'Current Individual'
                 if cnt < len(points_to_animate) - 1:
                     current_point = points_to_animate[cnt + 1]
                     ax.scatter(*current_point, s=20, c='red',
-                               label='Current individual', zorder=4)
+                               label=current_individual_label, zorder=4)
                 else:
                     current_point = points_to_animate[cnt]
                     ax.scatter(*current_point, s=20, c='red',
-                               label='Current individual', zorder=4)
+                               label=current_individual_label, zorder=4)
 
                 # Redraw labels and legend
                 ax.set_xlabel('x')
@@ -223,7 +226,6 @@ def animate_optimizer(function: F, optimizer: Opt, optimizer_args: list = [], fo
 def plot_sphere(r: float = 1, title: str = "Sphere") -> None:
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
-    r = r
 
     phi = np.linspace(0, np.pi, 100)
     theta = np.linspace(0, 2 * np.pi, 100)

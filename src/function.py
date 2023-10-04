@@ -39,7 +39,7 @@ class Function:
         Get an interval (lower bound, upper bound, and step) for the given function.
 
         Args:
-            function (F): A function object of type 'F' for which to retrieve the interval.
+            function (F): An enumeration object of type 'F' for which to retrieve the interval.
 
         Returns:
             Interval: An Interval object representing the lower bound, upper bound,
@@ -56,9 +56,21 @@ class Function:
 
     @staticmethod
     def get(function: F) -> Callable:
-        function = getattr(Function, str.lower(function.name), None)
-        if function is not None and callable(function):
-            return lambda x: function(x)
+        """
+        Get a callable function for the given function name.
+
+        Args:
+            function (F): An enumeration object of type 'F'.
+
+        Returns:
+            Callable: A callable function that corresponds to the provided 'function'.
+
+        Raises:
+            ValueError: If the 'function' is not found or is not callable.
+        """
+        fun = getattr(Function, str.lower(function.name), None)
+        if fun is not None and callable(fun):
+            return lambda x: fun(x)
         else:
             raise ValueError(
                 f"Function '{function.name}' not found or not callable.")
@@ -93,7 +105,6 @@ class Function:
     @staticmethod
     def griewank(xx: Union[np.ndarray, list]) -> float:
         # https://www.sfu.ca/~ssurjano/griewank.html
-        d = len(xx)
         sum1 = np.sum([x**2 for x in xx]) / 4000
         prod = np.prod([np.cos(x / np.sqrt(i+1)) for i, x in enumerate(xx)])
         fx = sum1 - prod + 1
