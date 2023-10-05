@@ -12,6 +12,7 @@ class Opt(Enum):
     """
     BlindSearch = auto()
     HillClimber = auto()
+    SimulatedAnnealing = auto()
 
 
 class Optimizer(ABC):
@@ -56,7 +57,7 @@ class Optimizer(ABC):
         return instance
 
     @abstractmethod
-    def run(self, *args, **kwargs):
+    def run(self, *args, **kwargs) -> list[Point]:
         """
         This abstract method allows different arguments in subclasses of Optimizer.
         """
@@ -76,7 +77,7 @@ class BlindSearch(Optimizer):
     def __init__(self, lower_bound: float, upper_bound: float, objective_function: Callable, dimension: int = 2):
         super().__init__(lower_bound, upper_bound, objective_function, dimension)
 
-    def run(self, n_generations: int = 100) -> List[np.ndarray]:
+    def run(self, n_generations: int = 100) -> list[Point]:
         """
         Run the BlindSearch optimizer to randomly explore the search space and find the optimal solution.
 
@@ -84,7 +85,7 @@ class BlindSearch(Optimizer):
             n_generations (int, optional): The number of generations to run the optimizer (default is 100).
 
         Returns:
-            List[np.ndarray]: A list of numpy arrays representing the points generated during optimization.
+            list[Point]: A list of Point objects representing the points generated during optimization.
         """
         points = []
 
@@ -133,7 +134,7 @@ class HillClimber(Optimizer):
             if np.all(self.lb <= individual) and np.all(individual <= self.ub):
                 return individual
 
-    def run(self, n_generations: int = 100, n_neighbors: int = 1) -> List[np.ndarray]:
+    def run(self, n_generations: int = 100, n_neighbors: int = 1) -> list[Point]:
         """
         Run the HillClimber optimizer to find the optimal solution.
 
@@ -142,7 +143,7 @@ class HillClimber(Optimizer):
             n_neighbors (int, optional): The number of neighbors to consider for each generation (default is 1).
 
         Returns:
-            List[np.ndarray]: A list of numpy arrays representing the points generated during optimization.
+            list[Point]: A list of Point objects representing the points generated during optimization.
         """
         points = []
 
@@ -160,6 +161,80 @@ class HillClimber(Optimizer):
                     self.fx = fx
                 # Append all generated individuals
                 points.append(Point(individual[0], individual[1], fx))
+
+        return points
+
+
+class SimulatedAnnealing(Optimizer):
+    """
+    SimulatedAnnealing optimizer for finding the optimal solution within a bounded search space.
+
+    Args:
+        lower_bound (float): The lower bound of the search space.
+        upper_bound (float): The upper bound of the search space.
+        objective_function (Callable): The objective function to be optimized.
+        dimension (int, optional): The dimensionality of the search space (default is 2).
+
+    Simulated annealing is a stochastic optimization technique inspired by metallurgy principles
+    that involve gradually cooling a material to achieve a more optimal state,
+    akin to "Strike while the iron is hot."
+    """
+    def __init__(self, lower_bound: float, upper_bound: float, objective_function: Callable, dimension: int = 2):
+        super().__init__(lower_bound, upper_bound, objective_function, dimension)
+        # Initial guess (starting point)
+        self.params = np.random.uniform(self.lb, self.ub, self.d)
+
+    def generate_individual(self) -> np.ndarray:
+        """
+        Generate a random individual within the search space.
+
+        Returns:
+            np.ndarray: A random individual within the search space.
+        """
+        # Set sigma to a reasonable amount
+        sigma = (self.ub - self.lb) * 3 / 42
+        while True:
+            individual = np.random.normal(self.params, scale=sigma)
+            # Ensure that the generated random solution is within the search space
+            if np.all(self.lb <= individual) and np.all(individual <= self.ub):
+                return individual
+
+    def run(self, t0: int = 1000, t_min: int = 0, step: int = 10) -> list[Point]:        
+        """
+        Run Simulated annealing optimizer.
+
+        Parameters:
+            t0 (int, optional): Initial temperature (default is 1000).
+            t_min (int, optional): Minimum temperature at which the optimization stops (default is 0).
+            step (int, optional): Temperature reduction step (default is 10).
+
+        Returns:
+            list[Point]: A list of Point objects representing the points generated during optimization.
+        """
+        t = t0
+        self.fx = self.objective_function(self.params)
+        points = []
+
+        while t > t_min:
+            individual = self.generate_individual()
+            fx = self.objective_function(individual)
+            points.append(Point(individual[0], individual[1], fx))
+
+            delta_fx = fx - self.fx
+            # Update solution if the new solution is better 
+            if delta_fx < 0:
+                self.params = individual
+            else:
+                # Generate a random number between 0 (inclusive) and 1 (exclusive)
+                r = np.random.uniform(0,1)
+                # e^(\delta_f / t) ...if 't' is large, this expression is close to zero;
+                # therefore, there's high probability to accept even the worse solution.
+                # "Strike while the iron is hot."
+                # As 't' gets smaller, this chance becomes smaller and this algortihm
+                # acts just like HillClimber.
+                if r < np.exp(delta_fx / t):
+                    self.params = individual
+            t -= step
 
         return points
 

@@ -49,6 +49,35 @@ class Graph:
 
         plt.show()
 
+    def plot_points(self, title: str, points_to_animate):
+        xs = self.xs
+        ys = self.ys
+
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='3d', elev=35, azim=-125)
+
+        x_grid, y_grid = np.meshgrid(xs, ys)
+        xy_pairs = np.vstack((x_grid.ravel(), y_grid.ravel())).T
+        z_grid = np.array([self.fun(xy)
+                          for xy in xy_pairs]).reshape(x_grid.shape)
+
+        plt.title(title)
+
+        ax.plot_surface(x_grid, y_grid, z_grid,
+                                cmap=self.cmap, alpha=0.5, zorder=1)
+        
+        points = [point for point in points_to_animate]
+        x_values, y_values, z_values = zip(*points)
+        ax.scatter(x_values, y_values, z_values, s=15,
+                 c='black', label='History individuals', zorder=4)
+        
+        idx_best = np.argmin(z_values)
+        x, y, z = x_values[idx_best], y_values[idx_best], z_values[idx_best]
+        ax.scatter(x,y,z, s=30, c='red', label='Solution', zorder=4)
+
+        plt.show()
+
+
     def animate_points(self, title: str, points_to_animate):
         xs = self.xs
         ys = self.ys
@@ -202,13 +231,26 @@ def plot_my_functions() -> None:
               fun=Function.get(fun)).plot(str.capitalize(fun.name))
 
 
-def animate_optimizer(function: F, optimizer: Opt, optimizer_args: list = [], format: Union[None, str] = "mp4"):
+def plot_optimizer(function: F, optimizer: Opt, optimizer_args: Union[list, dict] = []):
     fun = Function.get(function)
     interval = Function.get_interval(function)
     graph = Graph(interval, fun)
     optimizer_algorithm = Optimizer.factory(optimizer, interval, fun)
     points = optimizer_algorithm.run(*optimizer_args)
+    graph.plot_points(str.capitalize(function.name), points)
+
+
+def animate_optimizer(function: F, optimizer: Opt, optimizer_args: Union[list, dict] = [], format: str = "mp4"):
+    fun = Function.get(function)
+    interval = Function.get_interval(function)
+    graph = Graph(interval, fun)
+    optimizer_algorithm = Optimizer.factory(optimizer, interval, fun)
+    points = optimizer_algorithm.run(*optimizer_args)
+    #anim = graph.animate_points(str.capitalize(function.name), points)
     anim = graph.animate_points360(str.capitalize(function.name), points)
+
+    if format == None:
+        format = "mp4"
 
     if format == "gif":
         anim.save(f'{function.name}_{str.lower(optimizer.name)}.gif',

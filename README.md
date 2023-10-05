@@ -64,6 +64,17 @@ Můžou vyřešit "black-box" problém, který se nechová podle známého matem
 
 ## Simulované žíhání (Simulated Annealing)
 
+1. Nastavení hyperparametrů teploty $T_0 = 1000$, $T_{min} = 0$ a $T_{step} = 10$.
+2. Dokud $T > T_{min}$:
+   1. Vytvoř jedince $I$ v **přípustné množině** všech řešení $\Omega$ (search space).
+   2. Vyhodnoť cenovou funkci $f(I),I\in\Omega$.
+   3. Výpočet $\Delta_f = f(I) - f_{best}$.
+   4. **Pokud** je nové řešení lepší (tzn. pro minimalizaci $\Delta_f < 0$), aktualizuj řešení.
+   5. **Jinak** přijmi nové (horší) řešení, pokud: $r < e^{\frac{\Delta_f}{T}}$, kde $r=\text{random}([0,1))$.
+   6. Snížení teploty $T = T - T_{step}$.
+
+Poznámka k výrazu $r < e^{\frac{\Delta_f}{T}}$. Pokud je teplota $T$ vysoká, tak se tento výraz blíží k jedné a je tedy velmi pravděpodobné, že bude přijato nové  řešení (i pokud je horší). Se snižující teplotou se tato pravděpodobnost snižuje.
+
 ## Genetické algoritmy
 
 - **roulette wheel selection**
