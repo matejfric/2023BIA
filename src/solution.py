@@ -232,7 +232,7 @@ class SimulatedAnnealing(Optimizer):
                 # "Strike while the iron is hot."
                 # As 't' gets smaller, this chance becomes smaller and this algortihm
                 # acts just like HillClimber.
-                if r < np.exp(delta_fx / t):
+                if r < np.exp(- delta_fx / t):
                     self.params = individual
             t -= step
 

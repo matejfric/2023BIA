@@ -30,7 +30,7 @@ pip install -r requirements.txt
 
 ### Optimalizační algoritmy a heuristiky
 
-Můžou vyřešit "black-box" problém, který se nechová podle známého matematického problému. 
+Můžou vyřešit "black-box" problém, který se nechová podle známého matematického problému.
 
 - **deterministické** - gradient descent
 - **enumerativní** - brute force

@@ -1,10 +1,12 @@
 import numpy as np
 from typing import Callable, Union
+import logging
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 from interval import Interval
 from function import Function, F
 from solution import Optimizer, Opt
+from point import Point
 
 
 class Graph:
@@ -231,22 +233,38 @@ def plot_my_functions() -> None:
               fun=Function.get(fun)).plot(str.capitalize(fun.name))
 
 
-def plot_optimizer(function: F, optimizer: Opt, optimizer_args: Union[list, dict] = []):
+def evaluate_points(function: F, optimizer: Opt, optimizer_args: Union[list, dict] = [])-> (Graph, list[Point]):
     fun = Function.get(function)
     interval = Function.get_interval(function)
     graph = Graph(interval, fun)
     optimizer_algorithm = Optimizer.factory(optimizer, interval, fun)
-    points = optimizer_algorithm.run(*optimizer_args)
+
+    # Process 'optimizer_args'
+    if isinstance(optimizer_args, list):
+        points = optimizer_algorithm.run(*optimizer_args)
+    elif isinstance(optimizer_args, dict):
+        try:
+            points = optimizer_algorithm.run(**optimizer_args)
+        except TypeError as e:
+            points = optimizer_algorithm.run()
+            logging.error(f"TypeError: {e}\nContinuing with default parameters...")
+    else:
+        points = optimizer_algorithm.run()
+        logging.error(f"""'optimizer_args' must be a list or a dictionary.
+                      Provided 'optimizer_args' is '{type(optimizer_args)}'
+                      with value '{optimizer_args}'.\n
+                      Continuing with default parameters...""")
+    
+    return (graph, points)
+
+
+def plot_optimizer(function: F, optimizer: Opt, optimizer_args: Union[list, dict] = []):
+    graph, points = evaluate_points(function, optimizer, optimizer_args)
     graph.plot_points(str.capitalize(function.name), points)
 
 
 def animate_optimizer(function: F, optimizer: Opt, optimizer_args: Union[list, dict] = [], format: str = "mp4"):
-    fun = Function.get(function)
-    interval = Function.get_interval(function)
-    graph = Graph(interval, fun)
-    optimizer_algorithm = Optimizer.factory(optimizer, interval, fun)
-    points = optimizer_algorithm.run(*optimizer_args)
-    #anim = graph.animate_points(str.capitalize(function.name), points)
+    graph, points = evaluate_points(function, optimizer, optimizer_args)
     anim = graph.animate_points360(str.capitalize(function.name), points)
 
     if format == None:
