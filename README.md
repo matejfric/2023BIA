@@ -9,6 +9,8 @@ pip install -r requirements.txt
 
 ## Základní pojmy
 
+- pro srovnávání algoritmů je vhodná reference **počet ohodnocení cenové funkce** (např. graf počet ohodnocení vs. funkční hodnota)
+
 ### Evoluce
 
 1. nastavení hyperparametrů
@@ -45,6 +47,30 @@ Můžou vyřešit "black-box" problém, který se nechová podle známého matem
 
 - neexistuje algoritmus, který by fungoval na všechny problémy
 
+### Evoluční algoritmy
+
+- jednoduchost
+- použití decimálních čísel, resp. jejich binárního zápisu
+  - využití [Grayova kódu](https://en.wikipedia.org/wiki/Gray_code), kde se každé dvě následující čísla liší pouze jedním bitem
+
+#### Binary-Reflected Gray Code
+
+- reflect-and-prefix method.
+
+![Screenshot from 2023-10-12 09-48-34](https://github.com/matejfric/2023BIA/assets/95862670/d6960193-161a-46d9-83a5-460b4eb25dbe)
+ 
+### Populace 
+
+- každá populace je definována vzorem / zástupcem (specimen), např. $Specimen=( (Float,[Lo,Hi]), (Int,[Lo,Hi]), (Short,[Lo,Hi]) )$
+- Co, když je jedinec vygenerován mimo přípustnou množinu?
+  - přesun na hranici $\rightarrow$ hromadění jedinců na hranici
+  - generace nového jedince, dokud nesplňuje požadavky
+  - "pohyb po kouli", $\texttt{if } x>x_{max}: \Delta x = | x_{max} - x | \Rightarrow x = x_{min} + \Delta x$
+ 
+### Testovací funkce
+
+- často mají globální extrém ve "stejném" bodě nehledě na dimenzi (např. Schwefel - $f(\mathbf{x}^{\star})=\mathbf{o}$, $\mathbf{x}^{\star}=(420.97,..., 420.97) $) 
+
 ## Blind Search
 
 - generuju náhodné řešení z prostoru všech řešení
@@ -78,7 +104,10 @@ Poznámka k výrazu $r < e^{\frac{\Delta_f}{T}}$. Pokud je teplota $T$ vysoká, 
 ## Genetické algoritmy
 
 - **roulette wheel selection**
+- mutují se bity binárního zápisu decimálního čísla
 
 ## Particle Swarm
 
-## Differential Evolition
+## Differential Evolution
+
+
