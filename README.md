@@ -58,15 +58,15 @@ Můžou vyřešit "black-box" problém, který se nechová podle známého matem
 - reflect-and-prefix method.
 
 ![Screenshot from 2023-10-12 09-48-34](https://github.com/matejfric/2023BIA/assets/95862670/d6960193-161a-46d9-83a5-460b4eb25dbe)
- 
-### Populace 
+
+### Populace
 
 - každá populace je definována vzorem / zástupcem (specimen), např. $Specimen=( (Float,[Lo,Hi]), (Int,[Lo,Hi]), (Short,[Lo,Hi]) )$
 - Co, když je jedinec vygenerován mimo přípustnou množinu?
   - přesun na hranici $\rightarrow$ hromadění jedinců na hranici
   - generace nového jedince, dokud nesplňuje požadavky
   - "pohyb po kouli", $\texttt{if } x>x_{max}: \Delta x = | x_{max} - x | \Rightarrow x = x_{min} + \Delta x$
- 
+
 ### Testovací funkce
 
 - často mají globální extrém ve "stejném" bodě nehledě na dimenzi (např. Schwefel - $f(\mathbf{x}^{\star})=\mathbf{o}$, $\mathbf{x}^{\star}=(420.97,..., 420.97) $) 
@@ -103,11 +103,84 @@ Poznámka k výrazu $r < e^{\frac{\Delta_f}{T}}$. Pokud je teplota $T$ vysoká, 
 
 ## Genetické algoritmy
 
-- **roulette wheel selection**
+- tutoriál od [The Hebrew University of Jerusalem](https://www.cs.huji.ac.il/~ai/projects/old/tsp2.pdf)
+- založeny na principech evoluce v přírodě - C. R. Darwin a G. J. Mendel
 - mutují se bity binárního zápisu decimálního čísla
+- používá se *fitness* funkce $F$ normalizovaná do intervalu $[0,1]$
+
+Obecný převod cenové funkce na fitness:
+
+$$
+F(i)=\frac{F_{max}-F_{min}}{f_{min}-f_{max}}f(i)+\frac{f_{min}F_{min}-f_{max}F_{max}}{f_{min}-f_{max}}
+$$
+
+Na intervalu $[0,1]$:
+
+$$
+F(i)=\frac{f(i)-f_{max}}{f_{min}-f_{max}}
+$$
+
+Na intervalu $[0,1]$ s "ošetřením $\infty$" ($\varepsilon=0.01$):
+
+$$
+F(i)=\frac{(1-\varepsilon)f(i)+f_{min}\varepsilon-f_{max}}{f_{min}-f_{max}}
+$$
+
+### Výběr rodičů (selection)
+
+During each successive generation a proportion of the existing population is selected to breed a new generation. Individual solutions are selected through a stochastic fitness-based process, where the requirement is that fitter solutions (as measured by a fitness function) are typically more likely to be selected.
+
+Rodiče se výbírají stochastickým procesem založeným na *fitness* funkci.
+
+1. Roulette Wheel Selection
+   - seřadím jedince podle fitness
+   - vygeneruju náhodné číslo $r\in[0,1)$
+   - vyberu prvního jedince, který má fitness větší než $r$
+   - nefunguje dobře pro velké rozdíly mezi rodiči, proto se používá jednoduchá korekce - *Rank Selection*
+2. Rank selection
+   - jedincům přiřadím hodnoty $1,2,3,...$ podle fitness (nejhorší jedinec 1), odpovídá to "velikosti úseček"
+![rank selection](image.png)
+
+Rank Selection (Roulette Wheel Selection)
+
+$$\mathcal{P}(X=i)=\frac{fitness(i)}{\sum\limits_j fitness(j)}$$
+
+```python
+def pick_one(population: list):
+    idx = 0
+    r = np.random()
+    while r > 0:
+        r -= population[idx].prob
+        idx += 1
+    return population[idx - 1]
+```
+
+3. Tournament Selection
+
+```pseudocode
+choose k (the tournament size) individuals from the population at random
+choose the best individual from the tournament with probability p
+choose the 2nd best individual with probability p*(1-p)
+choose the 3rd best individual with probability p*((1-p)^2)
+and so on
+```
+
+### Generování potomků - křížení (crossover)
+
+- single point crossover
+![crossover1](image-1.png)
+![crossover2](image-2.png)
+
+- n-point crossover
+![n-point crossover](image-3.png)
+
+- uniform crossover (uniformní křížení - každý gen (bit) je náhodně vybrán z jednoho z odpovídajících genů rodičovských chromozomů)
+![uniform crossover](image-4.png)
+
+U **TSP** vedou předchozí metody k nevalidní konfiguraci.
+
+### Mutace
 
 ## Particle Swarm
 
 ## Differential Evolution
-
-
