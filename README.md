@@ -139,9 +139,11 @@ Rodiče se výbírají stochastickým procesem založeným na *fitness* funkci.
    - nefunguje dobře pro velké rozdíly mezi rodiči, proto se používá jednoduchá korekce - *Rank Selection*
 2. Rank selection
    - jedincům přiřadím hodnoty $1,2,3,...$ podle fitness (nejhorší jedinec 1), odpovídá to "velikosti úseček"
-![rank selection](image.png)
+![Rank selection](https://github.com/matejfric/2023BIA/assets/95862670/1cb8457b-b26a-4916-98c1-4d80a8b43c94)
 
 Rank Selection (Roulette Wheel Selection)
+
+![Roulette Wheel Selection](https://github.com/matejfric/2023BIA/assets/95862670/11066f0e-0c14-4f45-b22e-aa8a750fbee7)
 
 $$\mathcal{P}(X=i)=\frac{fitness(i)}{\sum\limits_j fitness(j)}$$
 
@@ -168,14 +170,17 @@ and so on
 ### Generování potomků - křížení (crossover)
 
 - single point crossover
-![crossover1](image-1.png)
-![crossover2](image-2.png)
+
+![single point crossover](https://github.com/matejfric/2023BIA/assets/95862670/fc003100-cf2a-4af4-8ab9-ba71b4dd4c9a)
+![single point crossover2](https://github.com/matejfric/2023BIA/assets/95862670/8407011d-a3a6-4de3-9a80-83a31a591d72)
 
 - n-point crossover
-![n-point crossover](image-3.png)
+  
+![n-point crossover](https://github.com/matejfric/2023BIA/assets/95862670/6177219a-4639-4070-b93e-7640388a3cb6)
 
 - uniform crossover (uniformní křížení - každý gen (bit) je náhodně vybrán z jednoho z odpovídajících genů rodičovských chromozomů)
-![uniform crossover](image-4.png)
+  
+![uniform crossover](https://github.com/matejfric/2023BIA/assets/95862670/7e2ac0e5-2efe-47f8-ae62-22646f229083)
 
 U **TSP** vedou předchozí metody k nevalidní konfiguraci.
 
