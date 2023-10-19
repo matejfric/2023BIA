@@ -18,7 +18,7 @@ pip install -r requirements.txt
 3. prvotní vyhodnocení cenové funkce
 4. **výběr rodičů** (výběr nejlepších vede k degradaci!)
 5. vytvoření potomků
-6. **mutace** potomků (s mírou, např. vhodný parametr $\sigma$ u $N(\mu, \sigma) $)
+6. **mutace** potomků (s mírou, např. vhodný parametr $ \sigma $ u $ \mathcal{N}(\mu, \sigma) $)
 7. vyhodnocení cenové funkce
 8. **elitismus** - výběr nejlepších jednotlivců, obecně z potomků i rodičů
 9. **nová populace**
@@ -67,9 +67,13 @@ Můžou vyřešit "black-box" problém, který se nechová podle známého matem
   - generace nového jedince, dokud nesplňuje požadavky
   - "pohyb po kouli", $\texttt{if } x>x_{max}: \Delta x = | x_{max} - x | \Rightarrow x = x_{min} + \Delta x$
 
+#### Omezení na argumenty cenové funkce, penalizace, kritické situace
+
+- TODO
+
 ### Testovací funkce
 
-- často mají globální extrém ve "stejném" bodě nehledě na dimenzi (např. Schwefel - $f(\mathbf{x}^{\star})=\mathbf{o}$, $\mathbf{x}^{\star}=(420.97,..., 420.97) $) 
+- často mají globální extrém ve "stejném" bodě nehledě na dimenzi (např. Schwefel - $f(\mathbf{x}^{\star})=\mathbf{o}$, $\mathbf{x}^{\star}=(420.97,..., 420.97) $)
 
 ## Blind Search
 
@@ -186,6 +190,32 @@ U **TSP** vedou předchozí metody k nevalidní konfiguraci.
 
 ### Mutace
 
-## Particle Swarm
+- TODO
 
-## Differential Evolution
+## Diferenciální evoluce (Differential Evolution)
+
+- jeden z dnešních nejlepších evolučních algoritmů
+  - ale NFLT: mravenci jsou lepší na kombinatorické výpočty
+- vychází z genetických algoritmů
+
+### Pseudokód
+
+1. vygeneruj $NP\in\mathbb{N}$ jedinců počáteční populace
+2. pro $G$ generací opakuj:
+   1. zkopíruj původní populaci
+   2. pro každého jedince předchozí populace - `for parent in population:`
+      1. náhodně vyber tři jedince $x_1,x_2,x_3$
+      2. jedinci/rodiče z předchozího kroku se podílejí na tvorbě jednoho nového potomka $\boxed{v=(x_1-x_2)*F+x_3}$, kde $F\in[0,2]$ je *mutační konstanta* a $v$ je tzv. *mutační vektor*
+      3. proveď *křížení* - pro každý prvek `trial_vector = np.zeros(D)`: pokud je pravděpodobnost (`np.random.uniform()`$\in[0,1)$) menší než $CR\in [0,1]$ (crossover rate), přiřaď do `trial_vector` prvek z mutačního vektoru $v$, jinak zachovej parametr z rodiče (`trial_vector[i] = parent[i]`)
+      4. vyhodnoť fitness, pokud je lepší, než aktualní, tak přidej vytvořeného potomka (`trial_vector`) do nové populace a aktualizuj řešení
+   3. nahraď starou populaci novou
+
+### Parametry
+
+- $CR\in [0,1]$ - Crossover Rate (doporučení: 0.8 - 0.9)
+- $D$ - dimenze
+- $NP\in[10D,100D]$ - velikost populace
+- $F\in[0,2]$ - mutační konstanta - zkrátí nebo natáhne vektor (0.8)
+- $G>0$ - generace
+
+## Particle Swarm

@@ -22,7 +22,7 @@ def vizualization_examples():
     animate_optimizer(F.ackley, Opt.SimulatedAnnealing, [], "mp4")
 
     # Pass keyword arguments to the optimizer
-    optimizer_args = {'t0': 1000, 't_min': 0, 'step': 100}
+    optimizer_args = {'t0': 1000, 't_min': 0, 'alpha': 0.92}
     plot_optimizer(F.griewank, Opt.SimulatedAnnealing, optimizer_args)
 
     # Loop over all available test functions and
@@ -30,10 +30,16 @@ def vizualization_examples():
     for fun in F:
         plot_optimizer(fun, Opt.SimulatedAnnealing)
 
+    # Differential Evolution
+    optimizer_args = {"n_generations": 20, "population_size": 10}
+    animate_optimizer(F.ackley, Opt.DifferentialEvolution, optimizer_args)
+
 
 if __name__ == "__main__":
     random.seed(42)
     np.random.seed(42)
 
-    animate_optimizer(F.griewank, Opt.SimulatedAnnealing, [], "mp4")
+    optimizer_args = {"n_generations": 20, "population_size": 10}
+    plot_optimizer(F.ackley, Opt.DifferentialEvolution, optimizer_args)
+
 
