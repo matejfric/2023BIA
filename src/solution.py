@@ -382,29 +382,42 @@ class DifferentialEvolution(Optimizer):
         population = self._generate_initial_population(NP)
         visited_solutions = []
 
+        # Evaluate fitness of the initial population.
+        # Keep in mind that we intend to minimize 
+        # the number of objective evaluations.
+        fittness = [self._evaluate_individual(ind) for ind in population]
+
         for _ in range(n_generations):
             new_population = population.copy()
+            new_fitness = fittness.copy()
             for i, parent in enumerate(population):
                 idxs = self._select_random_parent_indices(i, NP)
                 mutation_vec = self._calc_mutation_vector(population, idxs, F)
                 trial_vector = self._crossover(mutation_vec, parent, CR)
 
-                # Evaluate costs
-                cost_offspring = self._evaluate_individual(trial_vector)
-                cost_parent = self._evaluate_individual(parent)
+                # Evaluate fittness
+                fittness_offspring = self._evaluate_individual(trial_vector)
+                fittness_parent = fittness[i] # Here, we save redundant objective 
+                                              # evaluations by reusing previously 
+                                              # computed fitness.
 
-                # Solution with the same cost as a target vector is always accepted
-                if cost_offspring <= cost_parent:
+                # Solution with the same fittness as a target vector is always accepted
+                if fittness_offspring <= fittness_parent:
 
                     # Propagate the offspring
                     new_population[i] = trial_vector
+                    new_fitness[i] = fittness_offspring
 
-                    self.fx = cost_offspring
-                    self.params = trial_vector
+                    if fittness_offspring <= self.fx:
+                        # Update the best solution
+                        self.fx = fittness_offspring
+                        self.params = trial_vector
+
                     visited_solutions.append(
                         Point(self.params[0], self.params[1], self.fx))
 
             population = new_population
+            fittness = new_fitness
 
         return visited_solutions
 

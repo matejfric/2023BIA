@@ -27,8 +27,9 @@ def vizualization_examples():
 
     # Loop over all available test functions and
     # plot results of the selected optimizer.
+    optimizer_args = {"n_generations": 20, "population_size": 10}
     for fun in F:
-        plot_optimizer(fun, Opt.SimulatedAnnealing)
+        plot_optimizer(fun, Opt.DifferentialEvolution, optimizer_args)
 
     # Differential Evolution
     optimizer_args = {"n_generations": 20, "population_size": 10}
@@ -40,6 +41,9 @@ if __name__ == "__main__":
     np.random.seed(42)
 
     optimizer_args = {"n_generations": 20, "population_size": 10}
-    plot_optimizer(F.ackley, Opt.DifferentialEvolution, optimizer_args)
+    #plot_optimizer(F.ackley, Opt.DifferentialEvolution, optimizer_args)
+    for fun in F:
+        plot_optimizer(fun, Opt.DifferentialEvolution, optimizer_args)
+    
 
 
