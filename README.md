@@ -75,6 +75,17 @@ Můžou vyřešit "black-box" problém, který se nechová podle známého matem
 
 - často mají globální extrém ve "stejném" bodě nehledě na dimenzi (např. Schwefel - $f(\mathbf{x}^{\star})=\mathbf{o}$, $\mathbf{x}^{\star}=(420.97,..., 420.97) $)
 
+### Limity výpočetních systémů (Limes Computablis)
+
+Počet mikrosekund od počátku vesmíru má 24 číslic. Počet protonů ve známém vesmíru 79.
+
+- matematické - Gödelova věta,
+- kvantové - množství informace, které lze teoreticky uložit do množství hmoty
+
+### Limity "inteligentních" systémů
+
+- ....
+
 ## Blind Search
 
 - generuju náhodné řešení z prostoru všech řešení
@@ -88,7 +99,7 @@ Můžou vyřešit "black-box" problém, který se nechová podle známého matem
 
 - podobné jako horolezec, jen při generování jednotlivců (pomocí normálního rozdělění) je vynuceno, aby se neopakovaly předchozí řešení (pomocí fronty a kontroly "`solution is in tabu_queue`")
 
-## Ant Colony Optimization
+## Ant Colony Optimization (ACO)
 
 - vhodný pro kombinatorické problémy
 
@@ -218,4 +229,11 @@ U **TSP** vedou předchozí metody k nevalidní konfiguraci.
 - $F\in[0,2]$ - mutační konstanta - zkrátí nebo natáhne vektor (0.8)
 - $G>0$ - generace
 
-## Particle Swarm
+## Particle Swarm Optimization (PSA)
+
+- hejnová inteligence
+- jedinci/agenti v populaci netvoří potomky, ale **komunikují** spolu
+- hlavní jedinec $gBest$ určuje kroky hejna
+- $pBest$ - lokální nejlepší řešení
+- hyperparametry $c_1$ a $c_2$ určují chování algoritmu a rozptyl hejna
+   - je možné tyto hodnoty snižovat s během algoritmu 
