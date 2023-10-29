@@ -19,6 +19,7 @@ class F(Enum, settings=NoAlias):
     michalewicz = [0, np.pi, np.pi/100]
     zakharov = [-10, 10, 0.1]
     ackley = [-3, 3, 0.05]
+    eggholder = [-512,512,4] #[-512,512,4] # Global min at (512,404.23,-959.64)
 
     def __iter__(self):
         """
@@ -157,4 +158,18 @@ class Function:
         term1 = -a * np.exp(-b * np.sqrt(1 / d * np.sum(np.power(xx, 2))))
         term2 = np.exp(1 / d * np.sum([np.cos(c * x) for x in xx]))
         fx = term1 - term2 + a + np.exp(1)
+        return fx
+    
+    @staticmethod
+    def eggholder(xx: Union[np.ndarray, list]) -> float:
+        if isinstance(xx, list):
+            xx = np.array(xx)
+
+        if xx.shape[0] != 2:
+            raise ValueError("The Eggholder function is defined for 2 variables only.")
+
+        x, y = xx
+        term1 = -(y + 47) * np.sin(np.sqrt(np.abs(y + x / 2 + 47)))
+        term2 = -x * np.sin(np.sqrt(np.abs(x - (y + 47))))
+        fx = term1 - term2
         return fx
