@@ -41,7 +41,7 @@ class Graph:
         z_grid = np.array([self.fun(xy)
                           for xy in xy_pairs]).reshape(x_grid.shape)
 
-        ax.plot_surface(x_grid, y_grid, z_grid, cmap=self.cmap)
+        self.plot_surface(ax, x_grid, y_grid, z_grid)
 
         ax.set_xlabel('x')
         ax.set_ylabel('y')
@@ -51,7 +51,91 @@ class Graph:
 
         plt.show()
 
-    def plot_points(self, title: str, points_to_animate):
+    def plot_surface(self, ax: plt.Axes, x_grid, y_grid, z_grid):
+        return ax.plot_surface(x_grid, y_grid, z_grid, linewidth=0.05,edgecolor='k',
+                                cmap=self.cmap, alpha=0.7, zorder=1)
+
+    def animate_points_contour(self, title: str, points, batch_size=20):
+        xs = self.xs
+        ys = self.ys
+
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+
+        x_grid, y_grid = np.meshgrid(xs, ys)
+        xy_pairs = np.vstack((x_grid.ravel(), y_grid.ravel())).T
+        z_grid = np.array([self.fun(xy)
+                          for xy in xy_pairs]).reshape(x_grid.shape)
+
+        plt.title(title)
+
+        cset = ax.contourf(x_grid, y_grid, z_grid, cmap=self.cmap)
+        plt.colorbar(cset, ax=ax, shrink=0.5, aspect=5)
+
+        # Create a function to update the plot with a batch of points
+        def update(frame):
+            ax.clear()
+            ax.contourf(x_grid, y_grid, z_grid, cmap=self.cmap)
+            batch_points = points[frame * batch_size:(frame + 1) * batch_size + 1]
+
+            if batch_points:
+                batch_x, batch_y, batch_z = zip(*batch_points)
+                ax.scatter(batch_x, batch_y, s=15, c='black', zorder=2)
+
+                idx_best = np.argmin(batch_z)
+                x, y, z = batch_x[idx_best], batch_y[idx_best], batch_z[idx_best]
+                ax.scatter(x, y, s=15, c='red', zorder=2)
+                ax.text(x, y, s=f"(x={x:.2f}, y={y:.2f}, z={z:.2f})", va='top', ha='left')
+
+            ax.set_xlabel('x')
+            ax.set_ylabel('y')
+
+        num_frames = len(points) // batch_size + 1
+
+        # Create the animation
+        anim = FuncAnimation(fig, update, frames=num_frames, repeat=False)
+
+        plt.show()
+
+        return anim
+
+    def plot_points_contour(self, title: str, points):
+        xs = self.xs
+        ys = self.ys
+
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+
+        x_grid, y_grid = np.meshgrid(xs, ys)
+        xy_pairs = np.vstack((x_grid.ravel(), y_grid.ravel())).T
+        z_grid = np.array([self.fun(xy)
+                          for xy in xy_pairs]).reshape(x_grid.shape)
+
+        plt.title(title)
+
+        cmap = plt.get_cmap('coolwarm')
+
+        cset = ax.contourf(x_grid, y_grid, z_grid, cmap=cmap)
+        plt.colorbar(cset, ax=ax, shrink=0.5, aspect=5)
+
+        # Plot the search history
+        points = [point for point in points]
+        x_values, y_values, z_values = zip(*points)
+        ax.scatter(x_values, y_values, s=15,
+                   c='black', label='History individuals', zorder=2)
+
+        # Plot the solution
+        idx_best = np.argmin(z_values)
+        x, y, z = x_values[idx_best], y_values[idx_best], z_values[idx_best]
+        ax.scatter(x, y, s=30, c='red', label='Solution', zorder=3)
+        ax.text(x, y, s=f"(x={x:.2f}, y={y:.2f}, z={z:.2f})", va='top', ha='left')
+
+        ax.set_xlabel('x')
+        ax.set_ylabel('y')
+        plt.legend()
+        plt.show()
+
+    def plot_points(self, title: str, points):
         xs = self.xs
         ys = self.ys
 
@@ -65,20 +149,21 @@ class Graph:
 
         plt.title(title)
 
-        ax.plot_surface(x_grid, y_grid, z_grid,
-                                cmap=self.cmap, alpha=0.5, zorder=1)
+        surf = self.plot_surface(ax,x_grid, y_grid, z_grid)
         
         # Plot the search history
-        points = [point for point in points_to_animate]
+        points = [point for point in points]
         x_values, y_values, z_values = zip(*points)
         ax.scatter(x_values, y_values, z_values, s=15,
-                 c='black', label='History individuals', zorder=4)
+                 c='black', label='History individuals', zorder=np.inf)
         
         # Plot the solution
         idx_best = np.argmin(z_values)
         x, y, z = x_values[idx_best], y_values[idx_best], z_values[idx_best]
         ax.scatter(x,y,z, s=30, c='red', label='Solution', zorder=4)
         ax.text(x,y,z, s=f"(x={x:.2f}, y={y:.2f}, z={z:.2f})", va = 'top', ha = 'left')
+
+        fig.colorbar(surf, ax = ax,shrink = 0.5,aspect = 5)
 
         ax.set_xlabel('x')
         ax.set_ylabel('y')
@@ -106,9 +191,7 @@ class Graph:
             if frame < len(points_to_animate):
                 ax.clear()
 
-                # Redraw the surface
-                ax.plot_surface(x_grid, y_grid, z_grid,
-                                cmap=self.cmap, alpha=0.5, zorder=1)
+                self.plot_surface(ax, x_grid, y_grid, z_grid)
 
                 # Plot the points up to the current frame, except the first frame
                 if frame != 0:
@@ -174,11 +257,14 @@ class Graph:
             ax.azim = azim
 
         step = int(360 / len(points_to_animate))
+        if step == 0:
+            step = 1
 
         def update(frame):
             global cnt
             if frame == 0:
                 cnt = 0
+
             # Animate the points
             if frame % step == 0:
 
@@ -189,8 +275,7 @@ class Graph:
                 ax.clear()
 
                 # Redraw the surface
-                ax.plot_surface(x_grid, y_grid, z_grid,
-                                cmap=self.cmap, alpha=0.5, zorder=1)
+                self.plot_surface(ax,x_grid, y_grid, z_grid)
 
                 # Plot the points up to the current frame, except the first frame
                 if cnt != 0:
@@ -264,13 +349,42 @@ def evaluate_points(function: F, optimizer: Opt, optimizer_args: Union[list, dic
     
     return (graph, points)
 
+def plot_optimizer_contour(function: F, optimizer: Opt, optimizer_args: Union[list, dict] = []):
+    graph, points = evaluate_points(function, optimizer, optimizer_args)
+    graph.plot_points_contour(str.capitalize(function.name), points)
 
 def plot_optimizer(function: F, optimizer: Opt, optimizer_args: Union[list, dict] = []):
     graph, points = evaluate_points(function, optimizer, optimizer_args)
     graph.plot_points(str.capitalize(function.name), points)
 
+def animate_optimizer_contour(function: F, optimizer: Opt, optimizer_args: Union[list, dict] = [], format: str = "mp4"):
+    graph: Graph
+    points: list[Point]
+    graph, points = evaluate_points(function, optimizer, optimizer_args)
+    
+    if 'swarm_size' in optimizer_args:
+        anim = graph.animate_points_contour(str.capitalize(function.name), points, optimizer_args['swarm_size'])
+    else:
+        anim = graph.animate_points_contour(str.capitalize(function.name), points, 1)
+
+    if format == None:
+        format = "mp4"
+
+    if format == "gif":
+        anim.save(f'{function.name}_{str.lower(optimizer.name)}.gif',
+                  writer='imagemagick',
+                  fps=24,
+                  progress_callback=lambda i, n: print(f'Saving frame {i}/{n}'))
+
+    if format == "mp4":
+        anim.save(f'{function.name}_{str.lower(optimizer.name)}.mp4',
+                  fps=15,
+                  extra_args=['-vcodec', 'libx264'],
+                  progress_callback=lambda i, n: print(f'Saving frame {i}/{n}'))
 
 def animate_optimizer(function: F, optimizer: Opt, optimizer_args: Union[list, dict] = [], format: str = "mp4"):
+    graph: Graph
+    points: list[Point]
     graph, points = evaluate_points(function, optimizer, optimizer_args)
     anim = graph.animate_points360(str.capitalize(function.name), points)
 

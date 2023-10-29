@@ -1,10 +1,10 @@
-from typing import Callable
+from dataclasses import dataclass
+from typing import Callable, Iterable
 import numpy as np
 from abc import ABC, abstractmethod
 from enum import Enum, auto
 from point import Point
 from interval import Interval
-
 
 class Opt(Enum):
     """
@@ -14,6 +14,7 @@ class Opt(Enum):
     HillClimber = auto()
     SimulatedAnnealing = auto()
     DifferentialEvolution = auto()
+    ParticleSwarm = auto()
 
 
 class Optimizer(ABC):
@@ -205,7 +206,7 @@ class SimulatedAnnealing(Optimizer):
             if np.all(self.lb <= individual) and np.all(individual <= self.ub):
                 return individual
 
-    def run(self, t0: int = 1000, t_min: int = 5, alpha: int = 0.93) -> list[Point]:
+    def run(self, t0: int = 1000, t_min: int = 5, alpha: float = 0.93) -> list[Point]:
         """
         Run Simulated annealing optimizer.
 
@@ -268,7 +269,7 @@ class DifferentialEvolution(Optimizer):
         """
         super().__init__(lower_bound, upper_bound, objective_function, dimension)
 
-    def _generate_initial_population(self, population_size: int) -> np.ndarray:
+    def _generate_initial_population(self, population_size: int) -> list[np.ndarray]:
         """
         Generate an initial population of random solutions.
 
@@ -418,6 +419,208 @@ class DifferentialEvolution(Optimizer):
 
             population = new_population
             fittness = new_fitness
+
+        return visited_solutions
+
+
+@dataclass
+class Particle:
+    x: np.ndarray # position
+    fx: float # fitness(x)
+    v: np.ndarray # velocity
+    p_best: np.ndarray # best visited position
+    f_best: float # fitness(p_best)
+
+
+class Swarm:
+    def __init__(self) -> None:
+        self.particles: list[Particle] = []
+        self.g_best: int = 0
+
+    def get_g_best(self) ->  Particle:
+        return self.particles[self.g_best]
+
+    def append(self, particle: Particle) -> None:
+        self.particles.append(particle)
+
+    def __getitem__(self, index: int) -> Particle:
+        if index < 0 or index >= len(self.particles):
+            raise IndexError(f"Invalid index '{index}'")
+        return self.particles[index]
+    
+    def __setitem__(self, index: int, particle: Particle) -> None:
+        if index < 0 or index >= len(self.particles):
+            raise IndexError(f"Invalid index '{index}'")
+        if not isinstance(particle, Particle):
+            raise ValueError(f"Particle must have the data type 'Particle', but has the type '{type(particle)}'")
+        self.particles[index] = particle
+    
+    def __iter__(self) -> Iterable[Particle]:
+        return iter(self.particles)
+
+
+class ParticleSwarm(Optimizer):
+    """
+    swarm <=> population
+    """
+
+    def __init__(self, lower_bound: float, upper_bound: float, objective_function: Callable, dimension: int = 2):
+        """
+        Initialize the ParticleSwarm optimizer.
+
+        Args:
+        - lower_bound (float): The lower bound for the optimization problem.
+        - upper_bound (float): The upper bound for the optimization problem.
+        - objective_function (Callable): The objective function to be minimized.
+        - dimension (int): The dimension of the problem (default is 2).
+        """
+        super().__init__(lower_bound, upper_bound, objective_function, dimension)
+
+    def _generate_initial_swarm(self, swarm_size: int, v_min: float, v_max: float) -> Swarm:
+        # Initialize the particle's position with a uniformly distributed random vector: x_i ~ U(lb, ub)
+        xs = [np.random.uniform(self.lb, self.ub, self.d)
+                              for _ in range(swarm_size)] 
+        
+        # Initialize the particle's velocity: v_i ~ U(-|ub-lb|, |ub-lb|)
+        vs = [np.random.uniform(v_min, v_max, self.d)
+                              for _ in range(swarm_size)]
+        
+        # Initialize the particle's velocity: v_i ~ N((v_max+v_min)/2,abs(v_max-v_min)/4)
+        # vs = [np.random.normal((v_max+v_min)/2,abs(v_max-v_min)/4,self.d)
+        #                       for _ in range(swarm_size)]
+
+        # Initialize the particle's best known position to its initial position: p_i ← x_i
+        # ps = xs
+
+        # Create initial swarm
+        swarm = Swarm()
+        best_fitness = np.inf
+        for idx,x,v in zip(range(len(xs)),xs,vs):
+            f = self.objective_function(x)
+            swarm.append(Particle(x,f,v,x,f))
+            if f < best_fitness:
+                best_fitness = f
+                swarm.g_best = idx
+        return swarm
+    
+    def _compute_inertia(self, n_migrations: int, migration: int,
+                         initial_inertia: float, final_inertia: float) -> float:
+        return initial_inertia - (((initial_inertia - final_inertia) * migration) / n_migrations)
+    
+    def _check_velocity_boundaries(self, v: np.ndarray, v_min: float, v_max: float) -> np.ndarray:
+        # for idx in range(len(v)):
+        #     if v[idx] < v_min:
+        #         v[idx] = v_min
+        #     if v[idx] > v_max:
+        #         v[idx] = v_max
+        # return v
+        coefficient = abs(v_max - v_min) / 10
+        for idx in range(len(v)):
+            if v[idx] < v_min:
+                v[idx] = v_min #+ coefficient
+            if v[idx] > v_max:
+                v[idx] = v_max #- coefficient
+        return v
+        # for idx in range(len(v)):
+        #     if v[idx] < v_min or v[idx] > v_max:
+        #         v = np.random.normal((v_max+v_min)/2,abs(v_max-v_min)/4,self.d)
+        # return v
+
+    def _check_position_boundaries(self, x: np.ndarray) -> np.ndarray:
+        for idx in range(len(x)):
+            if x[idx] < self.lb or x[idx] > self.ub:
+                return np.random.uniform(self.lb,self.ub,self.d)
+        return x
+        
+    def _update_best_particle_position(self, particle_idx: int, swarm: Swarm) -> Swarm:
+        p: Particle = swarm[particle_idx] 
+        g_best: Particle = swarm.get_g_best()
+        p.fx = self.objective_function(p.x)
+        
+        if p.fx < p.f_best:
+            # Update p_best
+            p.p_best = p.x
+            p.f_best = p.fx
+            swarm[particle_idx] = p
+
+            if p.fx < g_best.f_best:
+                # Update g_Best
+                swarm.g_best = particle_idx
+        return swarm
+    
+    def _update_swarm_velocity_and_position(self, swarm: Swarm, inertia: float,
+                         c1: float, c2: float,
+                         v_min: float, v_max: float) -> Swarm:
+        g_best = swarm.get_g_best()
+        i: int
+        p: Particle
+        for i,p in enumerate(swarm):
+            rand_p = np.random.uniform(0,1,self.d)
+            rand_g = np.random.uniform(0,1,self.d)
+            w = inertia
+
+            # Update velocity
+            p.v = w * p.v + c1 * rand_p * (p.p_best - p.x) + \
+                  c2 * rand_g * (g_best.p_best - p.x)
+            p.v = self._check_velocity_boundaries(p.v, v_min, v_max)
+
+            # Update position
+            p.x += p.v
+            p.x = self._check_position_boundaries(p.x)
+
+            self._assert_boundaries(p,v_min,v_max)
+
+            # Update the particle
+            swarm[i] = p
+
+            # Update p_best and g_best
+            swarm = self._update_best_particle_position(i, swarm)
+
+        return swarm
+    
+    def _assert_boundaries(self, particle: Particle, v_min: float, v_max: float) -> None:
+        for idx in range(len(particle.x)):
+            if (particle.x[idx] < self.lb or particle.x[idx] > self.ub or
+                particle.v[idx] < v_min or particle.v[idx] > v_max):
+                raise RuntimeError('Particle out of boundaries')
+            
+    def run(self, 
+            n_migrations: int = 50,
+            swarm_size: int | None = None,
+            v_min: float | None = None,
+            v_max: float | None = None,
+            c1: float | None = 0.5,
+            c2: float | None = 0.5,
+            initial_inertia: float = 0.9,
+            final_inertia: float = 0.4,
+            ) -> list[Point]:
+        """
+
+        Returns:
+        - visited_solutions (list[Point]): A list of Point objects representing visited solutions during optimization.
+        """
+        swarm_size = 10 * self.d if swarm_size is None else swarm_size
+        v_max = 1 / 20 * abs(self.ub - self.lb) if v_max is None else v_max
+        v_min = (-1) * v_max if v_min is None else v_min
+        visited_solutions = []
+
+        swarm: Swarm = self._generate_initial_swarm(swarm_size, v_min, v_max)
+
+        for migration in range(n_migrations):
+            w = self._compute_inertia(n_migrations,migration,initial_inertia,final_inertia)
+            swarm = self._update_swarm_velocity_and_position(swarm,w,c1,c2,v_min,v_max)
+
+            for particle in swarm:
+                self._assert_boundaries(particle, v_min, v_max)
+                visited_solutions.append(
+                    Point(particle.x[0], particle.x[1], particle.fx))
+
+        # Save the best solution
+        g_best = swarm.get_g_best()
+        self._assert_boundaries(g_best, v_min, v_max)
+        self.params = g_best.p_best
+        self.fx = g_best.f_best
+        visited_solutions.append(Point(self.params[0], self.params[1], self.fx))
 
         return visited_solutions
 

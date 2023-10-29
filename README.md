@@ -1,5 +1,37 @@
 # Biologicky inspirované algoritmy
 
+- [Quickstart](#quickstart)
+- [Základní pojmy](#základní-pojmy)
+  - [Evoluce](#evoluce)
+  - [Strategie](#strategie)
+  - [Optimalizační algoritmy a heuristiky](#optimalizační-algoritmy-a-heuristiky)
+  - [No Free Lunch Theorem (NFLT)](#no-free-lunch-theorem-nflt)
+  - [Evoluční algoritmy](#evoluční-algoritmy)
+    - [Binary-Reflected Gray Code](#binary-reflected-gray-code)
+  - [Populace](#populace)
+    - [Omezení na argumenty cenové funkce, penalizace, kritické situace](#omezení-na-argumenty-cenové-funkce-penalizace-kritické-situace)
+  - [Testovací funkce](#testovací-funkce)
+  - [Limity výpočetních systémů (Limes Computablis)](#limity-výpočetních-systémů-limes-computablis)
+  - [Limity "inteligentních" systémů](#limity-inteligentních-systémů)
+- [Blind Search](#blind-search)
+- [Hill Climber (Horolezec)](#hill-climber-horolezec)
+- [Tabu Search](#tabu-search)
+- [Simulované žíhání (Simulated Annealing)](#simulované-žíhání-simulated-annealing)
+- [Genetické algoritmy](#genetické-algoritmy)
+  - [Výběr rodičů (selection)](#výběr-rodičů-selection)
+  - [Generování potomků - křížení (crossover)](#generování-potomků---křížení-crossover)
+  - [Mutace](#mutace)
+- [Diferenciální evoluce (Differential Evolution - DE)](#diferenciální-evoluce-differential-evolution---de)
+  - [Pseudokód DE](#pseudokód-de)
+  - [Parametry DE](#parametry-de)
+- [Hejnová inteligence (Swarm Intelligence - SI)](#hejnová-inteligence-swarm-intelligence---si)
+  - [Vlastnosti](#vlastnosti)
+  - [Particle Swarm Optimization (PSO)](#particle-swarm-optimization-pso)
+    - [Rovnice PSO](#rovnice-pso)
+    - [Pseudokód PSO](#pseudokód-pso)
+    - [Výhody a nevýhody PSO](#výhody-a-nevýhody-pso)
+  - [Ant Colony Optimization (ACO)](#ant-colony-optimization-aco)
+
 ## Quickstart
 
 ```bash
@@ -18,7 +50,7 @@ pip install -r requirements.txt
 3. prvotní vyhodnocení cenové funkce
 4. **výběr rodičů** (výběr nejlepších vede k degradaci!)
 5. vytvoření potomků
-6. **mutace** potomků (s mírou, např. vhodný parametr $ \sigma $ u $ \mathcal{N}(\mu, \sigma) $)
+6. **mutace** potomků - s mírou, např. vhodný parametr $\sigma$ u $\mathcal{N}(\mu, \sigma)$
 7. vyhodnocení cenové funkce
 8. **elitismus** - výběr nejlepších jednotlivců, obecně z potomků i rodičů
 9. **nová populace**
@@ -61,7 +93,8 @@ Můžou vyřešit "black-box" problém, který se nechová podle známého matem
 
 ### Populace
 
-- každá populace je definována vzorem / zástupcem (specimen), např. $Specimen=( (Float,[Lo,Hi]), (Int,[Lo,Hi]), (Short,[Lo,Hi]) )$
+- každá populace je definována vzorem / zástupcem (specimen),
+  - např. $Specimen=\big( (float,[Lo,Hi]), (int,[Lo,Hi]), (short,[Lo,Hi]) \big)$
 - Co, když je jedinec vygenerován mimo přípustnou množinu?
   - přesun na hranici $\rightarrow$ hromadění jedinců na hranici
   - generace nového jedince, dokud nesplňuje požadavky
@@ -73,7 +106,8 @@ Můžou vyřešit "black-box" problém, který se nechová podle známého matem
 
 ### Testovací funkce
 
-- často mají globální extrém ve "stejném" bodě nehledě na dimenzi (např. Schwefel - $f(\mathbf{x}^{\star})=\mathbf{o}$, $\mathbf{x}^{\star}=(420.97,..., 420.97) $)
+- často mají globální extrém ve "stejném" bodě nehledě na dimenzi
+  - např. Schwefel, $f(\mathbf{x}^{\star})=\mathbf{o}$, $\mathbf{x}^{\star}=(420.97,..., 420.97)$
 
 ### Limity výpočetních systémů (Limes Computablis)
 
@@ -88,31 +122,27 @@ Počet mikrosekund od počátku vesmíru má 24 číslic. Počet protonů ve zn�
 
 ## Blind Search
 
-- generuju náhodné řešení z prostoru všech řešení
+- Generuji náhodné řešení z prostoru všech řešení (přípustné množiny) pomocí **uniformního rozdělení**
 
 ## Hill Climber (Horolezec)
 
-1. nejlepší řešení $\leftarrow$ náhodné řešení z prostoru všech řešení
-2. generuju jednotlivce z okolí nejlepšího řešení pomocí normálního rozdělení (se zvoleným parametrem $\sigma$)
+1. nejlepší řešení $\leftarrow$ náhodné řešení z prostoru všech řešení, $X\sim U(lb,ub)$
+2. generuju jednotlivce z okolí nejlepšího řešení pomocí **normálního rozdělení** (se zvoleným parametrem $\sigma$) a kontroluju, jestli nový jedinec není mimo přípustnou množinu
 
 ## Tabu Search
 
-- podobné jako horolezec, jen při generování jednotlivců (pomocí normálního rozdělění) je vynuceno, aby se neopakovaly předchozí řešení (pomocí fronty a kontroly "`solution is in tabu_queue`")
-
-## Ant Colony Optimization (ACO)
-
-- vhodný pro kombinatorické problémy
+- podobné jako horolezec, jen při generování jednotlivců (pomocí normálního rozdělění) je vynuceno, aby se neopakovaly předchozí řešení (pomocí fronty a kontroly `solution is in tabu_queue`)
 
 ## Simulované žíhání (Simulated Annealing)
 
-1. Nastavení hyperparametrů teploty $T_0 = 1000$, $T_{min} = 0$ a $T_{step} = 10$.
+1. Nastavení hyperparametrů teploty $T_0 = 1000$, $T_{min} = 0$, $\alpha = 0.95$.
 2. Dokud $T > T_{min}$:
    1. Vytvoř jedince $I$ v **přípustné množině** všech řešení $\Omega$ (search space).
    2. Vyhodnoť cenovou funkci $f(I),I\in\Omega$.
    3. Výpočet $\Delta_f = f(I) - f_{best}$.
    4. **Pokud** je nové řešení lepší (tzn. pro minimalizaci $\Delta_f < 0$), aktualizuj řešení.
-   5. **Jinak** přijmi nové (horší) řešení, pokud: $r < e^{\frac{\Delta_f}{T}}$, kde $r=\text{random}([0,1))$.
-   6. Snížení teploty $T = T - T_{step}$.
+   5. **Jinak** přijmi nové (horší) řešení, pokud: $r < e^{\frac{\Delta_f}{T}}$, kde $r=\text{random}\big([0,1)\big)$.
+   6. Snížení teploty $T \leftarrow T \cdot \alpha$.
 
 Poznámka k výrazu $r < e^{\frac{\Delta_f}{T}}$. Pokud je teplota $T$ vysoká, tak se tento výraz blíží k jedné a je tedy velmi pravděpodobné, že bude přijato nové  řešení (i pokud je horší). Se snižující teplotou se tato pravděpodobnost snižuje.
 
@@ -203,37 +233,98 @@ U **TSP** vedou předchozí metody k nevalidní konfiguraci.
 
 - TODO
 
-## Diferenciální evoluce (Differential Evolution)
+## Diferenciální evoluce (Differential Evolution - DE)
 
 - jeden z dnešních nejlepších evolučních algoritmů
-  - ale NFLT: mravenci jsou lepší na kombinatorické výpočty
+  - ale platí NFLT, např. mravenci (ACO) jsou lepší na kombinatorické výpočty
 - vychází z genetických algoritmů
 
-### Pseudokód
+### Pseudokód DE
 
 1. vygeneruj $NP\in\mathbb{N}$ jedinců počáteční populace
-2. pro $G$ generací opakuj:
-   1. zkopíruj původní populaci
+2. vyhodnoť *fitness* počáteční populace (`fitness`)
+3. pro $G$ generací opakuj:
+   1. zkopíruj původní populaci (`population_new`) a *fitness* populace (`fitness_new`)
    2. pro každého jedince předchozí populace - `for parent in population:`
       1. náhodně vyber tři jedince $x_1,x_2,x_3$
       2. jedinci/rodiče z předchozího kroku se podílejí na tvorbě jednoho nového potomka $\boxed{v=(x_1-x_2)*F+x_3}$, kde $F\in[0,2]$ je *mutační konstanta* a $v$ je tzv. *mutační vektor*
       3. proveď *křížení* - pro každý prvek `trial_vector = np.zeros(D)`: pokud je pravděpodobnost (`np.random.uniform()`$\in[0,1)$) menší než $CR\in [0,1]$ (crossover rate), přiřaď do `trial_vector` prvek z mutačního vektoru $v$, jinak zachovej parametr z rodiče (`trial_vector[i] = parent[i]`)
-      4. vyhodnoť fitness, pokud je lepší, než aktualní, tak přidej vytvořeného potomka (`trial_vector`) do nové populace a aktualizuj řešení
-   3. nahraď starou populaci novou
+      4. vyhodnoť *fitness*, pokud je potomek lepší, než aktualní jedinec, tak přidej vytvořeného potomka do nové populace `population_new[i] = trial_vector`, aktualizuj pole `fitness_new` a aktualizuj řešení (pokud je potomek lepší než aktuální nejlepší řešení)
+   3. nahraď starou populaci novou:
+      1. `population = population_new`
+      2. `fitness = fitness_new`
 
-### Parametry
+### Parametry DE
 
-- $CR\in [0,1]$ - Crossover Rate (doporučení: 0.8 - 0.9)
+- $CR\in [0,1]$ - Crossover Rate (doporučení: $[0.5, 0.9]$)
 - $D$ - dimenze
 - $NP\in[10D,100D]$ - velikost populace
-- $F\in[0,2]$ - mutační konstanta - zkrátí nebo natáhne vektor (0.8)
+- $F\in[0,2]$ - mutační konstanta - zkrátí nebo natáhne vektor $(0.8)$
 - $G>0$ - generace
 
-## Particle Swarm Optimization (PSA)
+## Hejnová inteligence (Swarm Intelligence - SI)
 
-- hejnová inteligence
+- větev AI
+- hejnové algoritmy jsou inspirováné chováním hejn zvířat v přírodě, především u hmyzu (mravenci) nebo třeba
+  - ptácí (*flock*)
+  - ryby (*shoal*)
+  - mouchy (*swarm*)
 - jedinci/agenti v populaci netvoří potomky, ale **komunikují** spolu
-- hlavní jedinec $gBest$ určuje kroky hejna
-- $pBest$ - lokální nejlepší řešení
-- hyperparametry $c_1$ a $c_2$ určují chování algoritmu a rozptyl hejna
-   - je možné tyto hodnoty snižovat s během algoritmu 
+- v hejnové inteligenci neexistují operátory mutace a křížení (crossover)
+- z biologie si SI přebírá především kooperativní chování, kdy hejno je schopno vyřešit problém, který žádný jedinec není schopný vyřešit samostatně
+- globální inteligence je poháněna lokálními interakcemi
+
+### Vlastnosti
+
+- *povědomí o svém okolí* (**awareness**) - každý agent musí mít povědomí o svém okolí
+- *samostatnost* (**autonomy**) - každý agent pracovat autonomně (not as a slave)
+- *vzájemná podpora* (**solidarity**) -  když je úkol dokončen, tak si agenti autonomně hledají nové úkoly
+- *rozšiřitelnost* (**expandability**) - po nalezení (lokálního) minima agenti rozšíří oblast hledání
+- *robustnost* (**resiliency**) - když je agent odstraněn, tak se systém musí omět zotavit (např. "vyléčit agenta")
+
+### Particle Swarm Optimization (PSO)
+
+- PSO napodobuje chování hejna ptáků
+- každá částice (particle) má svoji **pozici** ($x$; souřadnice) a **rychlost** ($v$; směrový vektor), navíc si pamatují svoji současnou nejlepší pozici
+- `g_best`...globálně nejlepší řešení v populaci
+- `p_best`...lokální nejlepší řešení (pro daného agenta)
+
+#### Rovnice PSO
+
+- rovnice pro rychlost a polohu na základě rychlosti a předchozí polohy
+
+$$
+\begin{align*}
+v_{d}^{(t+1)} &= [w]\cdot v_{d}^{(t)} - c_1 \cdot \text{rand} \cdot (\text{p\_best}_{i,d} - x_{i,d}^{(t)})+c_2 \cdot \text{rand} \cdot (\text{g\_best}_{d} - x_{i,d}^{(t)}), \\
+x_{i,d}^{(t+1)} &= x_{i,d}^{(t)} + v_{d}^{(t+1)},
+\end{align*}
+$$
+
+kde $\text{rand}\in[0,1)$, $w$ je volitelný parametr setrvačnosti a hyperparametry "učení" $c_1$, $c_2$ určují chování algoritmu a rozptyl roje/hejna
+
+- hyperparametry $c_1$ a $c_2$ je možné tyto hodnoty snižovat s během algoritmu (simulované žíhání)
+- výsledkem jsou **tři typy chování**:
+  - **individuální** - částice pokračuje vlastní cestou
+  - **konzervativní** - částice se vrací ke svému nejlepšímu nalezenému řešení `p_best`
+  - **flexibilní** - částice směřuje ke globálně nejlepšímu řešení `g_best`
+- pokud částice "vyletí" z přípustné množiny všech řešení, tak se **náhodně vygeneruje nová** (*robustnost*)
+  - aby se tento jev příliš často neopakoval, tak je nastavena **maximální rychlost** $v_{max}$
+
+#### Pseudokód PSO
+
+- TODO
+
+#### Výhody a nevýhody PSO
+
+- tendence skončit v lokálním extrému
+- mnoho hyperparametrů
+  - počet částic, doporučení $10D$
+  - $v_{max}$...doporučení 1/20 velikosti prohledávaného prostoru, např. $[-10,10]\rightarrow v_{max}=1$
+    - příliš malá $\rightarrow$ pomalá konvergence a malá část prohledaného prostoru
+    - příliš velká $\rightarrow$ přestřelování optimálního řešení
+  - $c_1,c_2$ - hyperparametry učení (ovlivňují hlavně výběr chování částic)
+  - $w$ - setrvačnost
+
+### Ant Colony Optimization (ACO)
+
+- vhodný pro kombinatorické problémy
