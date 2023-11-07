@@ -15,6 +15,7 @@ class Opt(Enum):
     SimulatedAnnealing = auto()
     DifferentialEvolution = auto()
     ParticleSwarm = auto()
+    SOMA = auto()
 
 
 class Optimizer(ABC):
@@ -552,12 +553,12 @@ class ParticleSwarm(Optimizer):
                          c1: float, c2: float,
                          v_min: float, v_max: float) -> Swarm:
         g_best = swarm.get_g_best()
+        w = inertia
         i: int
         p: Particle
         for i,p in enumerate(swarm):
             rand_p = np.random.uniform(0,1,self.d)
             rand_g = np.random.uniform(0,1,self.d)
-            w = inertia
 
             # Update velocity
             p.v = w * p.v + c1 * rand_p * (p.p_best - p.x) + \
@@ -566,7 +567,8 @@ class ParticleSwarm(Optimizer):
 
             # Update position
             p.x += p.v
-            p.x = self._check_position_boundaries(p.x)
+            if not self._is_within_boundaries(p,v_min, v_max):
+                p.x = self._check_position_boundaries(p.x)
 
             self._assert_boundaries(p,v_min,v_max)
 
@@ -583,6 +585,13 @@ class ParticleSwarm(Optimizer):
             if (particle.x[idx] < self.lb or particle.x[idx] > self.ub or
                 particle.v[idx] < v_min or particle.v[idx] > v_max):
                 raise RuntimeError('Particle out of boundaries')
+            
+    def _is_within_boundaries(self, particle: Particle, v_min: float, v_max: float) -> bool:
+        for idx in range(len(particle.x)):
+            if (particle.x[idx] < self.lb or particle.x[idx] > self.ub or
+                particle.v[idx] < v_min or particle.v[idx] > v_max):
+                return False
+        return True
             
     def run(self, 
             n_migrations: int = 50,
@@ -608,12 +617,18 @@ class ParticleSwarm(Optimizer):
 
         for migration in range(n_migrations):
             w = self._compute_inertia(n_migrations,migration,initial_inertia,final_inertia)
+            #w = 1
             swarm = self._update_swarm_velocity_and_position(swarm,w,c1,c2,v_min,v_max)
 
+            # Save only g_best
+            # particle: Particle = swarm.get_g_best()
+            # visited_solutions.append(
+            #     Point(particle.p_best[0], particle.p_best[1], particle.f_best))
             for particle in swarm:
+                particle: Particle
                 self._assert_boundaries(particle, v_min, v_max)
                 visited_solutions.append(
-                    Point(particle.x[0], particle.x[1], particle.fx))
+                    Point(particle.p_best[0], particle.p_best[1], particle.f_best))
 
         # Save the best solution
         g_best = swarm.get_g_best()
@@ -623,6 +638,100 @@ class ParticleSwarm(Optimizer):
         visited_solutions.append(Point(self.params[0], self.params[1], self.fx))
 
         return visited_solutions
+
+
+class SOMA(Optimizer):
+    def __init__(self, lower_bound: float, upper_bound: float, objective_function: Callable, dimension: int = 2):
+        """
+        Initialize the Self-Organizing Migrating Algorithm (SOMA).
+
+        Args:
+        - lower_bound (float): The lower bound for the optimization problem.
+        - upper_bound (float): The upper bound for the optimization problem.
+        - objective_function (Callable): The objective function to be minimized.
+        - dimension (int): The dimension of the problem (default is 2).
+        """
+        super().__init__(lower_bound, upper_bound, objective_function, dimension)
+
+    def _generate_initial_population(self, population_size: int) -> np.ndarray:
+        population = [np.random.uniform(self.lb, self.ub, self.d)
+                              for _ in range(population_size)] 
+        return population
+    
+    def _check_boundaries(self, vec: np.ndarray) -> np.ndarray:
+        # Ensure that the vector stays inside the feasible set
+        for d in range(self.d):
+            if vec[d] < self.lb or vec[d] > self.ub:
+                # If out of bound reset the respective parameter
+                vec[d] = np.random.uniform(self.lb, self.ub)
+        return vec
+    
+    def _go_in_direction_to_leader(self, 
+                                   individual: np.ndarray,
+                                   leader: np.ndarray, 
+                                   step_sizes: list[float],
+                                   perturberation: float) -> list[np.ndarray]:
+        migration_loop = []
+        prt_vec = np.random.uniform(0,1,self.d) < perturberation
+        for t in step_sizes:
+            one_step = individual + t * prt_vec * (leader - individual)
+            one_step = self._check_boundaries(one_step)
+            migration_loop.append(one_step)
+        return migration_loop
+        
+    def run(self,
+            n_migrations: int = 10,
+            population_size: int = 10,
+            perturberation: float = 0.5,
+            step: float = 0.13,
+            path_length: float = 1) -> list[Point]:
+        visited_solutions = []
+        population = self._generate_initial_population(population_size)
+        fitness = [self.objective_function(i) for i in population]
+        leader_idx = np.argmin(fitness)
+        steps = np.arange(0,path_length,step)
+
+        for _ in range(n_migrations):
+            leader = population[leader_idx]
+            new_population = population.copy()
+            for i in range(population_size):
+                # Leader stays put
+                if i == leader_idx:
+                    continue
+                individual = population[i]
+                migration_loop = self._go_in_direction_to_leader(
+                    individual, leader, steps, perturberation
+                )
+                # Rank the individual
+                ind_fitness = [self.objective_function(m) 
+                               for m in migration_loop]
+                # Update best position
+                current_best_pos_idx = np.argmin(ind_fitness)
+                current_best_fitness = ind_fitness[current_best_pos_idx]
+                if current_best_fitness < fitness[i]:
+                    fitness[i] = current_best_fitness
+                    new_population[i] = migration_loop[current_best_pos_idx]
+                    if current_best_fitness < fitness[leader_idx]:
+                        leader_idx = i
+                        visited_solutions.append(
+                            Point(population[i][0], population[i][1], fitness[i]))
+            # Update leader
+            leader_idx = np.argmin(fitness)
+            # Update population
+            population = new_population
+
+        # Save the best solution
+        self.params = population[leader_idx]
+        self.fx = fitness[leader_idx]
+        visited_solutions.append(
+            Point(self.params[0], self.params[1], self.fx))
+        return visited_solutions
+                
+                
+
+
+
+
 
 
 def get_class(class_name: str):

@@ -39,20 +39,23 @@ def vizualization_examples():
     optimizer_args = {"n_generations": 40, "population_size": 20}
     animate_optimizer(F.eggholder, Opt.DifferentialEvolution, optimizer_args)
 
+    optimizer_args = {'n_migrations' : 50, 'swarm_size': 20, 'c1':2, 'c2':2}
+    plot_optimizer_contour(F.ackley, Opt.ParticleSwarm, optimizer_args)
+    animate_optimizer_contour(F.rastrigin, Opt.ParticleSwarm, optimizer_args)
+
 
 if __name__ == "__main__":
     random.seed(42)
     np.random.seed(42)
 
-    optimizer_args = {'n_migrations' : 50, 'swarm_size': 15, 'c1':2, 'c2':2}
+    optimizer_args = {'n_migrations': 100,
+                      'population_size': 20,
+                      'perturberation': 0.4,
+                      'step': 0.11,
+                      'path_length': 3}
     for fun in F:
-        #plot_optimizer(fun, Opt.ParticleSwarm, optimizer_args)
-        #plot_optimizer_contour(fun, Opt.ParticleSwarm, optimizer_args)
-        pass
-
-    #plot_optimizer_contour(F.ackley, Opt.ParticleSwarm, optimizer_args)
-    #animate_optimizer(F.michalewicz, Opt.ParticleSwarm, optimizer_args, format="mp4")
-    animate_optimizer_contour(F.eggholder, Opt.ParticleSwarm, optimizer_args)
+        plot_optimizer(fun, Opt.SOMA, optimizer_args)
+    #plot_optimizer(F.schwefel, Opt.SOMA)
     
 
 
