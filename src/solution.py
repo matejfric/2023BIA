@@ -714,7 +714,7 @@ class SOMA(Optimizer):
                     if current_best_fitness < fitness[leader_idx]:
                         leader_idx = i
                         visited_solutions.append(
-                            Point(population[i][0], population[i][1], fitness[i]))
+                            Point(new_population[i][0], new_population[i][1], fitness[i]))
             # Update leader
             leader_idx = np.argmin(fitness)
             # Update population
@@ -726,13 +726,7 @@ class SOMA(Optimizer):
         visited_solutions.append(
             Point(self.params[0], self.params[1], self.fx))
         return visited_solutions
-                
-                
-
-
-
-
-
+    
 
 def get_class(class_name: str):
     """
