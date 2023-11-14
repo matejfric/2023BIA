@@ -558,8 +558,14 @@ class GeneticAlgorithm:
         print(f"GA:\n{distance}\n{permutation}")
 
 
+class AntColonyOptimization:
+    def __init__(self) -> None:
+        pass
+
+
 if __name__ == '__main__':
     np.random.seed(42)
     ga = GeneticAlgorithm()
-    # ga.run(dimension=10, n_individuals=10, n_generations=100)
     ga.run(dimension=12, n_individuals=10, n_generations=125)
+    #ga.run(dimension=22, n_individuals=10, n_generations=500)
+

@@ -151,17 +151,16 @@ class Graph:
 
         surf = self.plot_surface(ax,x_grid, y_grid, z_grid)
         
-        # Plot the search history
         points = [point for point in points]
         x_values, y_values, z_values = zip(*points)
         ax.scatter(x_values, y_values, z_values, s=15,
-                 c='black', label='History individuals', zorder=np.inf)
+                 c='black', label='History individuals', zorder=5)
         
         # Plot the solution
         idx_best = np.argmin(z_values)
         x, y, z = x_values[idx_best], y_values[idx_best], z_values[idx_best]
         ax.scatter(x,y,z, s=30, c='red', label='Solution', zorder=4)
-        ax.text(x,y,z, s=f"(x={x:.2f}, y={y:.2f}, z={z:.2f})", va = 'top', ha = 'left')
+        ax.text(x,y,z, s=f"(x={x:.2f}, y={y:.2f}, z={z:.4f})", va = 'top', ha = 'left')
 
         fig.colorbar(surf, ax = ax,shrink = 0.5,aspect = 5)
 
@@ -354,6 +353,7 @@ def plot_optimizer_contour(function: F, optimizer: Opt, optimizer_args: Union[li
     graph.plot_points_contour(str.capitalize(function.name), points)
 
 def plot_optimizer(function: F, optimizer: Opt, optimizer_args: Union[list, dict] = []):
+    graph: Graph
     graph, points = evaluate_points(function, optimizer, optimizer_args)
     graph.plot_points(str.capitalize(function.name), points)
 
@@ -386,7 +386,10 @@ def animate_optimizer(function: F, optimizer: Opt, optimizer_args: Union[list, d
     graph: Graph
     points: list[Point]
     graph, points = evaluate_points(function, optimizer, optimizer_args)
-    anim = graph.animate_points360(str.capitalize(function.name), points)
+    if len(points) > 360:
+        anim = graph.animate_points(str.capitalize(function.name), points)
+    else:
+        anim = graph.animate_points360(str.capitalize(function.name), points)
 
     if format == None:
         format = "mp4"
