@@ -43,6 +43,15 @@ def vizualization_examples():
     plot_optimizer_contour(F.ackley, Opt.ParticleSwarm, optimizer_args)
     animate_optimizer_contour(F.rastrigin, Opt.ParticleSwarm, optimizer_args)
 
+def soma_demo():
+    optimizer_args = {'n_migrations': 100,
+                      'population_size': 20,
+                      'perturberation': 0.4,
+                      'step': 0.11,
+                      'path_length': 3}
+    for fun in F:
+        plot_optimizer(fun, Opt.SOMA, optimizer_args)
+
 
 if __name__ == "__main__":
     random.seed(42)
@@ -53,8 +62,10 @@ if __name__ == "__main__":
                       'perturberation': 0.4,
                       'step': 0.11,
                       'path_length': 3}
-    for fun in F:
-        plot_optimizer(fun, Opt.SOMA, optimizer_args)
+    # for fun in F:
+    #     plot_optimizer(fun, Opt.SOMA, optimizer_args)
+    plot_optimizer(F.michalewicz, Opt.SOMA, optimizer_args)
+    #animate_optimizer(F.eggholder,Opt.SOMA)
     #plot_optimizer(F.schwefel, Opt.SOMA)
     
 
