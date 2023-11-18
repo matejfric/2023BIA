@@ -56,33 +56,16 @@ class AntColonyOptimization:
         total_dst += dist_mat[individual[-1], individual[0]]
 
         return total_dst
-
-    def _pick_one(self, population: list, ranks: list) -> list:
-        """
-        Select an individual from the population based on its rank.
-
-        Args:
-            population (list): The population of TSP solutions.
-            ranks (list): A list of ranked fitness values corresponding to individuals.
-
-        Returns:
-            list: The selected individual based on its rank.
-        """
-        idx = 0
-        r = np.random.uniform()
-        while r > 0:
-            r -= ranks[idx]
-            idx += 1
-        return population[idx - 1]
+    
 
     def run(self,
-            n_iterations: int = 1000,
+            n_iterations: int = 200,
             n_cities: int = 12,
             n_ants: int = 10,
             pheromone_evaporation: float = 0.05,
             alpha: float = 1,
             beta: float = 1
-            ) -> None:
+            ) -> tuple[list[int],float]:
         """
         Run the ACO to solve the TSP and visualize the results.
         """
@@ -97,8 +80,8 @@ class AntColonyOptimization:
         _, permutation_opt = TSP(n_cities).solve()
 
         # Compute vision matrix
-        mask = ~np.eye(n_cities, dtype=bool)
-        vision_mat = np.reciprocal(self.dist_mat, where=mask)
+        vision_mask = ~np.eye(n_cities, dtype=bool)
+        vision_mat = np.reciprocal(self.dist_mat, where=vision_mask)
 
         # Initialize pheromones
         initial_pheromone_value = 1
@@ -107,12 +90,17 @@ class AntColonyOptimization:
 
         f_best: float = np.inf
         best_permutation: list = []
+        visited_solutions: list = []
 
         def f(x): return self.calc_distance(x)
 
         # Repeat for number of iterations
-        for _ in tqdm(range(n_iterations), "Ant Colony Optimization"):
-            starting_cities = np.random.choice(np.arange(n_cities), n_ants)
+        for iter in tqdm(range(n_iterations), "Ant Colony Optimization"):
+            
+            # Select a starting city for each ant
+            starting_cities = np.random.choice(n_cities, n_ants)
+
+            # Store permutations (ants)
             ant_colony = []
 
             # Path finding
@@ -122,11 +110,12 @@ class AntColonyOptimization:
                 city = starting_cities[ant]
                 while True:
                     local_permutation.append(city)
-                    local_vision_mask[:, city] = False
-                    unvisited_cities = local_vision_mask[city, :]
+                    local_vision_mask[:, city] = False  # boolean mask 
+                    unvisited_cities = local_vision_mask[city, :]  # boolean mask 
                     if np.sum(unvisited_cities) == 0:
                         break
                     costs = np.zeros(len(unvisited_cities))
+                    # Find probabilities of different path choices
                     costs[unvisited_cities] = pheromones[city, unvisited_cities] ** alpha * \
                         vision_mat[city, unvisited_cities] ** beta
                     denom = np.sum(costs)
@@ -149,19 +138,24 @@ class AntColonyOptimization:
                 if ant_cost < f_best:
                     best_permutation = ant
                     f_best = ant_cost
-                    # Visualization
-                    plot_individual(ax, ant, permutation_opt, self.cities)
+                    visited_solutions.append((ant, iter))  # For visualization
 
             pheromones = (1 - rho) * pheromones  # Evaporation
             pheromones += delta_pheromones  # Deposit new pheromones
 
-        plot_individual(ax, best_permutation, permutation_opt, self.cities)
+        for ant, iter in visited_solutions:
+            plot_individual(ax, ant, permutation_opt, self.cities, iter)
+            plt.pause(0.2)
         plt.savefig('aco_tsp.png', dpi=300)
         plt.show()
         print(f"ACO:\n{f_best}\n{best_permutation}")
 
+        return best_permutation, f_best
+
 
 if __name__ == '__main__':
     np.random.seed(42)
-    ga = AntColonyOptimization()
-    ga.run(n_cities=12)
+    aco = AntColonyOptimization()
+    # aco.run(n_cities=12)
+    # aco.run(n_cities=22, n_iterations=500, n_ants=20)
+    # aco.run(n_cities=30, n_iterations=500, n_ants=20)

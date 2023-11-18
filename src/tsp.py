@@ -44,10 +44,15 @@ class TSP:
             n_cities (int, optional): The number of cities to include in the problem instance.
                 Defaults to 5.
         """
-        distance_matrix, cities = TSP.ulysses(n_cities)
-        self.cities = cities
-        # self.cities = np.array([np.random.uniform(0, 1000, 2) for _ in range(n_cities)], dtype=np.float64)
-        self._dist_mat = distance_matrix
+        if n_cities > 22:
+            self.cities = np.array([np.random.uniform(0, 1000, 2) for _ in range(n_cities)], dtype=np.float64)
+            self._dist_mat = None
+        elif n_cities < 3:
+            raise ValueError("Number of cities must be greater than 2.")
+        else:
+            distance_matrix, cities = TSP.ulysses(n_cities)
+            self.cities = cities
+            self._dist_mat = distance_matrix
 
     @property
     def dist_mat(self) -> np.ndarray:

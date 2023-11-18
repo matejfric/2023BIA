@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-def plot_optimal_route(ax: plt.Axes, permutation: list, cities: np.ndarray) -> None:
+def _plot_optimal_route(ax: plt.Axes, permutation: list, cities: np.ndarray) -> None:
     """
     Plot the optimal TSP route on a given axis.
 
@@ -24,7 +24,7 @@ def plot_optimal_route(ax: plt.Axes, permutation: list, cities: np.ndarray) -> N
             'g', alpha=0.5, linewidth=4, label='Optimal Route')
 
 
-def plot_individual(ax: plt.Axes, individual: list, permutation: list, cities: np.ndarray) -> None:
+def plot_individual(ax: plt.Axes, individual: list, permutation: list, cities: np.ndarray, iter: int = None) -> None:
     """
     Plot an individual's TSP route on a given axis.
 
@@ -35,8 +35,8 @@ def plot_individual(ax: plt.Axes, individual: list, permutation: list, cities: n
     """
     # Clear the current axis to remove previous routes
     ax.cla()
-    plot_cities(ax, cities)
-    plot_optimal_route(ax, permutation, cities)
+    _plot_cities(ax, cities)
+    _plot_optimal_route(ax, permutation, cities)
 
     # Plot lines to connect cities in the TSP order
     for i in range(len(individual) - 1):
@@ -51,13 +51,16 @@ def plot_individual(ax: plt.Axes, individual: list, permutation: list, cities: n
     ax.plot([start_city[0], end_city[0]], [start_city[1], end_city[1],],
             'r', alpha=0.8, linewidth=3, label='Fittest Individual')
 
-    plt.title('TSP Visualization')
+    if iter is None:
+        plt.title('TSP Visualization')
+    else:
+        plt.title(f'TSP Visualization - Iteration #{iter}')
     plt.legend()
     # Pause to display the new plot
     plt.pause(0.01)
 
 
-def plot_cities(ax: plt.Axes, cities: np.ndarray) -> None:
+def _plot_cities(ax: plt.Axes, cities: np.ndarray) -> None:
     """
     Plot city coordinates on a given axis.
 
