@@ -57,16 +57,8 @@ if __name__ == "__main__":
     random.seed(42)
     np.random.seed(42)
 
-    optimizer_args = {'n_migrations': 100,
-                      'population_size': 20,
-                      'perturberation': 0.4,
-                      'step': 0.11,
-                      'path_length': 3}
-    # for fun in F:
-    #     plot_optimizer(fun, Opt.SOMA, optimizer_args)
-    plot_optimizer(F.michalewicz, Opt.SOMA, optimizer_args)
-    #animate_optimizer(F.eggholder,Opt.SOMA)
-    #plot_optimizer(F.schwefel, Opt.SOMA)
-    
-
+    for fun in F:
+        plot_optimizer(fun, Opt.Firefly)
+    #plot_optimizer(F.sphere, Opt.Firefly)
+    #animate_optimizer(F.sphere,Opt.Firefly, format='gif')    
 

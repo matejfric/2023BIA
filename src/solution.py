@@ -5,6 +5,7 @@ from abc import ABC, abstractmethod
 from enum import Enum, auto
 from point import Point
 from interval import Interval
+from scipy.spatial.distance import euclidean
 
 class Opt(Enum):
     """
@@ -16,6 +17,7 @@ class Opt(Enum):
     DifferentialEvolution = auto()
     ParticleSwarm = auto()
     SOMA = auto()
+    Firefly = auto()
 
 
 class Optimizer(ABC):
@@ -727,6 +729,104 @@ class SOMA(Optimizer):
             Point(self.params[0], self.params[1], self.fx))
         return visited_solutions
     
+
+class Firefly(Optimizer):
+    def __init__(self, lower_bound: float, upper_bound: float, objective_function: Callable, dimension: int = 2):
+        """
+        Initialize the Self-Organizing Migrating Algorithm (SOMA).
+
+        Args:
+        - lower_bound (float): The lower bound for the optimization problem.
+        - upper_bound (float): The upper bound for the optimization problem.
+        - objective_function (Callable): The objective function to be minimized.
+        - dimension (int): The dimension of the problem (default is 2).
+        """
+        super().__init__(lower_bound, upper_bound, objective_function, dimension)
+
+    def _generate_initial_population(self, population_size: int) -> np.ndarray:
+        population = [np.random.uniform(self.lb, self.ub, self.d)
+                      for _ in range(population_size)] 
+        return population
+    
+    def _check_boundaries(self, vec: np.ndarray) -> np.ndarray:
+        """Ensure that the vector stays inside the feasible set"""
+        for d in range(self.d):
+            if vec[d] < self.lb or vec[d] > self.ub:
+                # If out of bound reset the respective parameter
+                vec[d] = np.random.uniform(self.lb, self.ub)
+        return vec
+    
+    def _compute_attractiveness(self,
+                                ffi: np.ndarray,
+                                ffj: np.ndarray,
+                                initial_attractivness: float,
+                                light_absorption: float | None) -> float:
+        # Compute distance between firefly i and j 
+        r = euclidean(ffi, ffj)
+        # Compute attractiveness between firefly i and j 
+        if light_absorption is None:
+            attractiveness = 1 / (1+r)
+        else:
+            attractiveness = initial_attractivness * \
+                np.exp(-light_absorption * r**2)
+        return attractiveness
+
+    def run(self,
+            n_generations: int = 10,
+            population_size: int = 10,  # number of fireflys
+            alpha: float = 0.5,
+            light_absorption: float | None = None,
+            initial_attractivness: float = 1,
+            step: float = 0.13,
+            path_length: float = 1) -> list[Point]:
+        
+        def f(x): return self.objective_function(x)
+
+        visited_solutions = []
+        population = self._generate_initial_population(population_size)
+        light_intensity = [f(i) for i in population]  # fitness
+        best_ff_idx = np.argmin(light_intensity)
+
+        for _ in range(n_generations):
+            for i in range(population_size):
+                for j in range(i):
+                    if light_intensity[j] > light_intensity[i]:
+                        ffi = population[i]  # i-th firefly
+                        ffj = population[j]  # j-th firefly
+
+                        attractiveness = self._compute_attractiveness(
+                            ffi, ffj, initial_attractivness, light_absorption)
+                        eps = np.random.normal(size=self.d)
+
+                        # Move firefly i towards j                
+                        ffi += attractiveness * (ffj - ffi) + alpha * eps
+                        ffi = self._check_boundaries(ffi)
+
+                        # Evaluate solution and update light intesity
+                        f_new = f(ffi)
+                        if f_new <= light_intensity[i]:
+                            # Update local solution
+                            population[i] = ffi
+                            light_intensity[i] = f_new
+
+                            visited_solutions.append(
+                                    Point(ffi[0],
+                                          ffi[1],
+                                          f_new)
+                                          )
+
+                            if f_new <= light_intensity[best_ff_idx]:
+                                # Update global solution
+                                best_ff_idx = i
+                                self.params = ffi
+                                self.fx = f_new
+
+                        if i != best_ff_idx:
+                            # Other fireflys always move
+                            population[i] = ffi
+                            light_intensity[i] = f_new
+        return visited_solutions
+
 
 def get_class(class_name: str):
     """

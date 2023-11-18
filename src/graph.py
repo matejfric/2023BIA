@@ -2,11 +2,12 @@ import numpy as np
 from typing import Callable, Union
 import logging
 import matplotlib.pyplot as plt
-from matplotlib.animation import FuncAnimation
+from matplotlib.animation import FuncAnimation, PillowWriter
 from interval import Interval
 from function import Function, F
 from solution import Optimizer, Opt
 from point import Point
+import platform
 
 
 class Graph:
@@ -367,14 +368,20 @@ def animate_optimizer_contour(function: F, optimizer: Opt, optimizer_args: Union
     else:
         anim = graph.animate_points_contour(str.capitalize(function.name), points, 1)
 
-    if format == None:
-        format = "mp4"
-
     if format == "gif":
-        anim.save(f'{function.name}_{str.lower(optimizer.name)}.gif',
+        filename = f'{function.name}_{str.lower(optimizer.name)}.gif'
+        if platform.system() == "Linux":
+            anim.save(filename,
                   writer='imagemagick',
                   fps=24,
                   progress_callback=lambda i, n: print(f'Saving frame {i}/{n}'))
+        else:  # platform.system() == "Windows":
+            writergif = PillowWriter(fps=24)
+            anim.save(filename,
+                      writer=writergif,
+                      progress_callback=lambda i, n: print(f'Saving frame {i}/{n}'))
+            
+        
 
     if format == "mp4":
         anim.save(f'{function.name}_{str.lower(optimizer.name)}.mp4',
