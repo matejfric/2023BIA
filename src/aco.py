@@ -156,6 +156,6 @@ class AntColonyOptimization:
 if __name__ == '__main__':
     np.random.seed(42)
     aco = AntColonyOptimization()
-    # aco.run(n_cities=12)
+    aco.run(n_cities=12)
     # aco.run(n_cities=22, n_iterations=500, n_ants=20)
     # aco.run(n_cities=30, n_iterations=500, n_ants=20)

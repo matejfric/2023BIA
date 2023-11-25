@@ -1,4 +1,3 @@
-import gc
 from function import F
 from solution import Opt
 from graph import plot_my_functions, animate_optimizer, plot_optimizer, plot_optimizer_contour, animate_optimizer_contour
@@ -36,12 +35,18 @@ def vizualization_examples():
     optimizer_args = {"n_generations": 20, "population_size": 10}
     animate_optimizer(F.ackley, Opt.DifferentialEvolution, optimizer_args)
 
+    # DE
     optimizer_args = {"n_generations": 40, "population_size": 20}
     animate_optimizer(F.eggholder, Opt.DifferentialEvolution, optimizer_args)
 
+    # PSO
     optimizer_args = {'n_migrations' : 50, 'swarm_size': 20, 'c1':2, 'c2':2}
     plot_optimizer_contour(F.ackley, Opt.ParticleSwarm, optimizer_args)
     animate_optimizer_contour(F.rastrigin, Opt.ParticleSwarm, optimizer_args)
+
+    # Firefly
+    plot_optimizer(F.sphere, Opt.Firefly)
+
 
 def soma_demo():
     optimizer_args = {'n_migrations': 100,
@@ -58,7 +63,7 @@ if __name__ == "__main__":
     np.random.seed(42)
 
     for fun in F:
-        plot_optimizer(fun, Opt.Firefly)
+        plot_optimizer(fun, Opt.TLBO)
     #plot_optimizer(F.sphere, Opt.Firefly)
-    #animate_optimizer(F.sphere,Opt.Firefly, format='gif')    
+    #animate_optimizer(F.sphere, Opt.TLBO, format='gif')    
 
