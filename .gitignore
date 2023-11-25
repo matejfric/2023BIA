@@ -1,6 +1,9 @@
 # VSCode
 .vscode
 
+# Outputs
+output/
+
 # Videos
 *.mp4
 *.gif
