@@ -18,6 +18,7 @@ class Opt(Enum):
     ParticleSwarm = auto()
     SOMA = auto()
     Firefly = auto()
+    TLBO = auto() # Teaching-Learning Based Algorithm
 
 
 class Optimizer(ABC):
@@ -25,7 +26,7 @@ class Optimizer(ABC):
     Abstract base class for optimization algorithms.
     """
 
-    def __init__(self, lower_bound: float, upper_bound: float, objective_function: Callable, dimension: int = 2):
+    def __init__(self, lower_bound: float, upper_bound: float, objective_function: Callable, dimension: int = 2, max_ofe: int = 3000):
         """
         Initialize an optimizer instance.
 
@@ -41,6 +42,8 @@ class Optimizer(ABC):
         self.params = np.zeros(self.d)  # solution parameters
         self.fx = np.inf  # objective function evaluation
         self.objective_function = objective_function
+        self.max_ofe: int = max_ofe #  maximum number of objective function evaluations (ofe)
+        self.ofe: int = 0 # number of objective function evaluations (ofe)
 
     @staticmethod
     def factory(optimizer: Opt, interval: Interval, function: Callable):
@@ -296,6 +299,7 @@ class DifferentialEvolution(Optimizer):
         Returns:
         - fitness (float): The fitness value of the individual.
         """
+        self.ofe += 1
         return self.objective_function(individual)
 
     def _select_random_parent_indices(self, idx: int, population_size: int) -> np.ndarray:
@@ -423,6 +427,10 @@ class DifferentialEvolution(Optimizer):
             population = new_population
             fittness = new_fitness
 
+            if self.ofe >= self.max_ofe:
+                # Maximum number of objective function evaluations exceeded
+                break
+
         return visited_solutions
 
 
@@ -500,6 +508,7 @@ class ParticleSwarm(Optimizer):
         best_fitness = np.inf
         for idx,x,v in zip(range(len(xs)),xs,vs):
             f = self.objective_function(x)
+            self.ofe += 1
             swarm.append(Particle(x,f,v,x,f))
             if f < best_fitness:
                 best_fitness = f
@@ -539,6 +548,7 @@ class ParticleSwarm(Optimizer):
         p: Particle = swarm[particle_idx] 
         g_best: Particle = swarm.get_g_best()
         p.fx = self.objective_function(p.x)
+        self.ofe += 1
         
         if p.fx < p.f_best:
             # Update p_best
@@ -631,6 +641,10 @@ class ParticleSwarm(Optimizer):
                 self._assert_boundaries(particle, v_min, v_max)
                 visited_solutions.append(
                     Point(particle.p_best[0], particle.p_best[1], particle.f_best))
+                
+            if self.ofe >= self.max_ofe:
+                # Maximum number of objective function evaluations exceeded
+                break
 
         # Save the best solution
         g_best = swarm.get_g_best()
@@ -690,6 +704,7 @@ class SOMA(Optimizer):
         visited_solutions = []
         population = self._generate_initial_population(population_size)
         fitness = [self.objective_function(i) for i in population]
+        self.ofe += population_size
         leader_idx = np.argmin(fitness)
         steps = np.arange(0,path_length,step)
 
@@ -707,6 +722,7 @@ class SOMA(Optimizer):
                 # Rank the individual
                 ind_fitness = [self.objective_function(m) 
                                for m in migration_loop]
+                self.ofe += len(migration_loop)
                 # Update best position
                 current_best_pos_idx = np.argmin(ind_fitness)
                 current_best_fitness = ind_fitness[current_best_pos_idx]
@@ -722,6 +738,10 @@ class SOMA(Optimizer):
             # Update population
             population = new_population
 
+            if self.ofe >= self.max_ofe:
+                # Maximum number of objective function evaluations exceeded
+                break
+
         # Save the best solution
         self.params = population[leader_idx]
         self.fx = fitness[leader_idx]
@@ -733,7 +753,7 @@ class SOMA(Optimizer):
 class Firefly(Optimizer):
     def __init__(self, lower_bound: float, upper_bound: float, objective_function: Callable, dimension: int = 2):
         """
-        Initialize the Self-Organizing Migrating Algorithm (SOMA).
+        Initialize the Firefly Algorithm (FA).
 
         Args:
         - lower_bound (float): The lower bound for the optimization problem.
@@ -759,28 +779,29 @@ class Firefly(Optimizer):
     def _compute_attractiveness(self,
                                 ffi: np.ndarray,
                                 ffj: np.ndarray,
-                                initial_attractivness: float,
+                                initial_attractiveness: float,
                                 light_absorption: float | None) -> float:
         # Compute distance between firefly i and j 
         r = euclidean(ffi, ffj)
-        # Compute attractiveness between firefly i and j 
+        # Compute attractiveness between firefly i and j
         if light_absorption is None:
-            attractiveness = 1 / (1+r)
+            attractiveness = initial_attractiveness / (1+r)
         else:
-            attractiveness = initial_attractivness * \
+            attractiveness = initial_attractiveness * \
                 np.exp(-light_absorption * r**2)
         return attractiveness
 
     def run(self,
             n_generations: int = 10,
             population_size: int = 10,  # number of fireflys
-            alpha: float = 0.5,
+            alpha: float = 0.3,
             light_absorption: float | None = None,
             initial_attractivness: float = 1,
-            step: float = 0.13,
-            path_length: float = 1) -> list[Point]:
+        ) -> list[Point]:
         
-        def f(x): return self.objective_function(x)
+        def f(x): 
+            self.ofe += 1
+            return self.objective_function(x)
 
         visited_solutions = []
         population = self._generate_initial_population(population_size)
@@ -794,38 +815,156 @@ class Firefly(Optimizer):
                         ffi = population[i]  # i-th firefly
                         ffj = population[j]  # j-th firefly
 
-                        attractiveness = self._compute_attractiveness(
-                            ffi, ffj, initial_attractivness, light_absorption)
                         eps = np.random.normal(size=self.d)
 
-                        # Move firefly i towards j                
-                        ffi += attractiveness * (ffj - ffi) + alpha * eps
-                        ffi = self._check_boundaries(ffi)
-
-                        # Evaluate solution and update light intesity
-                        f_new = f(ffi)
-                        if f_new <= light_intensity[i]:
-                            # Update local solution
-                            population[i] = ffi
-                            light_intensity[i] = f_new
-
-                            visited_solutions.append(
-                                    Point(ffi[0],
-                                          ffi[1],
-                                          f_new)
-                                          )
-
-                            if f_new <= light_intensity[best_ff_idx]:
-                                # Update global solution
-                                best_ff_idx = i
-                                self.params = ffi
-                                self.fx = f_new
-
                         if i != best_ff_idx:
-                            # Other fireflys always move
-                            population[i] = ffi
-                            light_intensity[i] = f_new
+                            # Move firefly i towards j      
+                            attractiveness = self._compute_attractiveness(
+                                ffi, ffj, initial_attractivness, light_absorption)          
+                            ffi += attractiveness * (ffj - ffi) + alpha * eps
+                            ffi = self._check_boundaries(ffi)
+
+                            # Evaluate solution and update light intesity
+                            f_new = f(ffi)
+                            if f_new <= light_intensity[i]:
+                                # Update local solution
+                                population[i] = ffi
+                                light_intensity[i] = f_new
+
+                                visited_solutions.append(
+                                        Point(ffi[0],
+                                            ffi[1],
+                                            f_new)
+                                            )
+
+                                if f_new <= light_intensity[best_ff_idx]:
+                                    # Update global solution
+                                    best_ff_idx = i
+                                    self.params = ffi
+                                    self.fx = f_new
+
+                        else:
+                            # Best firefly moves randomly
+                            ffi += alpha * eps
+                            ffi = self._check_boundaries(ffi)
+
+                            # Evaluate solution and update light intesity
+                            f_new = f(ffi)
+                            if f_new <= light_intensity[i]:
+                                # Update local solution
+                                population[i] = ffi
+                                light_intensity[i] = f_new
+
+                                visited_solutions.append(
+                                        Point(ffi[0],
+                                            ffi[1],
+                                            f_new)
+                                            )
+
+                                if f_new <= light_intensity[best_ff_idx]:
+                                    # Update global solution
+                                    best_ff_idx = i
+                                    self.params = ffi
+                                    self.fx = f_new
+
+            if self.ofe >= self.max_ofe:
+                # Maximum number of objective function evaluations exceeded
+                break
+
         return visited_solutions
+
+
+class TLBO(Optimizer):
+    def __init__(self, lower_bound: float, upper_bound: float, objective_function: Callable, dimension: int = 2):
+        """
+        Initialize the Teaching-Learning Based Algorithm (TLBO).
+
+        Args:
+        - lower_bound (float): The lower bound for the optimization problem.
+        - upper_bound (float): The upper bound for the optimization problem.
+        - objective_function (Callable): The objective function to be minimized.
+        - dimension (int): The dimension of the problem (default is 2).
+        """
+        super().__init__(lower_bound, upper_bound, objective_function, dimension)
+
+    def _generate_initial_population(self, population_size: int) -> list[np.ndarray]:
+        population = [np.random.uniform(self.lb, self.ub, self.d)
+                      for _ in range(population_size)] 
+        return population
+    
+    def _check_boundaries(self, vec: np.ndarray) -> np.ndarray:
+        """Ensure that the vector stays inside the feasible set"""
+        for d in range(self.d):
+            if vec[d] < self.lb or vec[d] > self.ub:
+                # If out of bound reset the respective parameter
+                vec[d] = np.random.uniform(self.lb, self.ub)
+        return vec
+    
+    def _mean_of_population(self, population: list[np.ndarray]):
+        matrix = np.matrix(population)
+        pop_mean = np.mean(matrix, axis=0)
+        return np.array(pop_mean)[0]
+
+    def run(self,
+            n_generations: int = 10,
+            population_size: int = 10,
+    ) -> list[Point]:
+        def f(x): 
+            self.ofe += 1
+            return self.objective_function(x)
+        population = self._generate_initial_population(population_size)
+        pop_mean = self._mean_of_population(population)
+        visited_solutions = []
+        fitness = [f(i) for i in population]
+        teacher = np.argmin(fitness)
+
+        for _ in range(n_generations):
+
+            # Teacher phase
+            r = np.random.uniform()
+            tf = np.random.randint(1,3)
+            diff = r * (population[teacher] - tf * pop_mean)
+            new_teacher = population[teacher] + diff
+            new_teacher = self._check_boundaries(new_teacher)
+            f_new_teacher = f(new_teacher)
+            if f_new_teacher < fitness[teacher]:
+                fitness[teacher] = f_new_teacher
+                population[teacher] = new_teacher
+                visited_solutions.append(
+                        Point(new_teacher[0],new_teacher[1],f_new_teacher))
+
+            # Learner phase
+            pop_indices_without_teacher = [learner
+                                        for learner in range(len(population))
+                                        if learner != teacher]
+            for learner in pop_indices_without_teacher:
+                other_learners = [l for l in pop_indices_without_teacher if l != learner]
+                other = np.random.choice(other_learners)
+                r = np.random.uniform()
+                x = population[learner]
+                y = population[other]
+                if fitness[learner] < fitness[other]:
+                    x_new = x + r * (x - y)
+                else:
+                    x_new = x + r * (y - x)
+                x_new = self._check_boundaries(x_new)
+                fx_new = f(x_new)
+                if fx_new < fitness[learner]:
+                    fitness[learner] = fx_new
+                    population[learner] = x_new
+                    visited_solutions.append(
+                        Point(x_new[0],x_new[1],fx_new))
+                    
+            if self.ofe >= self.max_ofe:
+                # Maximum number of objective function evaluations exceeded
+                break
+                    
+        # Save the best solution
+        best_idx = np.argmin(fitness)
+        self.params = population[best_idx]
+        self.fx = fitness[best_idx]            
+        return visited_solutions
+
 
 
 def get_class(class_name: str):
