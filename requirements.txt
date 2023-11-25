@@ -5,6 +5,7 @@ numpy
 matplotlib
 aenum
 scipy
-#networkx
 tqdm
 python-tsp
+pandas
+XlsxWriter # pandas ExcelWriter
