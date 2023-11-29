@@ -31,9 +31,12 @@
     - [9.2.2. Pseudokód PSO](#922-pseudokód-pso)
     - [9.2.3. Výhody a nevýhody PSO](#923-výhody-a-nevýhody-pso)
   - [9.3. Samo-organizující se migrační algoritmus (SOMA)](#93-samo-organizující-se-migrační-algoritmus-soma)
-    - [SOMA hyperparametry](#soma-hyperparametry)
-    - [SOMA pseudokód](#soma-pseudokód)
+    - [9.3.1. SOMA hyperparametry](#931-soma-hyperparametry)
+    - [9.3.2. SOMA pseudokód](#932-soma-pseudokód)
   - [9.4. Ant Colony Optimization (ACO)](#94-ant-colony-optimization-aco)
+  - [9.5. Firefly Algorithm (FA)](#95-firefly-algorithm-fa)
+- [10. Teaching-Learning Based Optimization (TLBO)](#10-teaching-learning-based-optimization-tlbo)
+- [11. Multi-objective optimization (NSGA II)](#11-multi-objective-optimization-nsga-ii)
 
 ## 1. Quickstart
 
@@ -62,8 +65,8 @@ pip install -r requirements.txt
 
 ### 2.2. Strategie
 
-- point strategy (po jednotlivých bodech)
-- population strategy (po generacích)
+- **point** strategy (po jednotlivých bodech)
+- **population** strategy (po generacích)
 
 ### 2.3. Optimalizační algoritmy a heuristiky
 
@@ -75,7 +78,7 @@ Můžou vyřešit "black-box" problém, který se nechová podle známého matem
   - např. Hill Climber, Tabu Search
   - pomalé
   - založené na náhodě
-  - vhodné pouze pro malé $\Omega$
+  - vhodné pouze pro malé přípustné množiny $\Omega$
 - **kombinované** (mixed) - kombinace deterministických a stochastických algoritmů
 
 ### 2.4. No Free Lunch Theorem (NFLT)
@@ -90,9 +93,9 @@ Můžou vyřešit "black-box" problém, který se nechová podle známého matem
 
 #### 2.5.1. Binary-Reflected Gray Code
 
-- reflect-and-prefix method.
+- reflect-and-prefix metoda:
 
-![Screenshot from 2023-10-12 09-48-34](https://github.com/matejfric/2023BIA/assets/95862670/d6960193-161a-46d9-83a5-460b4eb25dbe)
+<img src="figures/reflect-and-prefix.png" alt="" style="width: 500px;">
 
 ### 2.6. Populace
 
@@ -101,7 +104,7 @@ Můžou vyřešit "black-box" problém, který se nechová podle známého matem
 - Co, když je jedinec vygenerován mimo přípustnou množinu?
   - přesun na hranici $\rightarrow$ hromadění jedinců na hranici
   - generace nového jedince, dokud nesplňuje požadavky
-  - "pohyb po kouli", $\texttt{if } x>x_{max}: \Delta x = | x_{max} - x | \Rightarrow x = x_{min} + \Delta x$
+  - pohyb po kouli, $\texttt{if } x>x_{max}\colon \Delta x = | x_{max} - x | \Rightarrow x = x_{min} + \Delta x$ (nefunguje pokud $x > 2 x_{max}$, asi by to šlo řešit modulem)
 
 #### 2.6.1. Omezení na argumenty cenové funkce, penalizace, kritické situace
 
@@ -187,25 +190,26 @@ Rodiče se výbírají stochastickým procesem založeným na *fitness* funkci.
    - nefunguje dobře pro velké rozdíly mezi rodiči, proto se používá jednoduchá korekce - *Rank Selection*
 2. Rank selection
    - jedincům přiřadím hodnoty $1,2,3,...$ podle fitness (nejhorší jedinec 1), odpovídá to "velikosti úseček"
-![Rank selection](https://github.com/matejfric/2023BIA/assets/95862670/1cb8457b-b26a-4916-98c1-4d80a8b43c94)
+
+<img src="figures/rank-selection.png" alt="" style="width: 500px;">
 
 Rank Selection (Roulette Wheel Selection)
 
-![Roulette Wheel Selection](https://github.com/matejfric/2023BIA/assets/95862670/11066f0e-0c14-4f45-b22e-aa8a750fbee7)
+<img src="figures/roulette-wheel.png" alt="" style="width: 500px;">
 
 $$\mathcal{P}(X=i)=\frac{fitness(i)}{\sum\limits_j fitness(j)}$$
 
 ```python
-def pick_one(population: list):
+def pick_one(probabilities: list):
     idx = 0
-    r = np.random()
+    r = np.random.uniform()
     while r > 0:
-        r -= population[idx].prob
+        r -= probabilities[idx]
         idx += 1
-    return population[idx - 1]
+    return probabilities[idx - 1]
 ```
 
-3. Tournament Selection
+1. Tournament Selection
 
 ```pseudocode
 choose k (the tournament size) individuals from the population at random
@@ -219,22 +223,32 @@ and so on
 
 - single point crossover
 
-![single point crossover](https://github.com/matejfric/2023BIA/assets/95862670/fc003100-cf2a-4af4-8ab9-ba71b4dd4c9a)
-![single point crossover2](https://github.com/matejfric/2023BIA/assets/95862670/8407011d-a3a6-4de3-9a80-83a31a591d72)
+<img src="figures/crossover1.png" alt="single point crossover" style="width: 500px;">
+<img src="figures/crossover2.png" alt="single point crossover" style="width: 500px;">
 
 - n-point crossover
-  
-![n-point crossover](https://github.com/matejfric/2023BIA/assets/95862670/6177219a-4639-4070-b93e-7640388a3cb6)
+
+<img src="figures/crossover3.png" alt="n-point crossover" style="width: 500px;">
 
 - uniform crossover (uniformní křížení - každý gen (bit) je náhodně vybrán z jednoho z odpovídajících genů rodičovských chromozomů)
-  
-![uniform crossover](https://github.com/matejfric/2023BIA/assets/95862670/7e2ac0e5-2efe-47f8-ae62-22646f229083)
+
+<img src="figures/crossover4.png" alt="uniform crossover" style="width: 500px;">
 
 U **TSP** vedou předchozí metody k nevalidní konfiguraci.
 
 ### 7.3. Mutace
 
-- TODO
+- v případě TSP s určitou pravděpodobností prohodím prvky jedince
+
+```python
+n_cities = len(offspring)
+for _ in offspring:
+    # Swap two random neighbors
+    if np.random.uniform() < mutation_rate:
+        idx1 = int(np.random.uniform(n_cities))
+        idx2 = (idx1+1) % n_cities
+        offspring = self._swap(offspring, idx1, idx2)
+```
 
 ## 8. Diferenciální evoluce (Differential Evolution - DE)
 
@@ -252,7 +266,7 @@ U **TSP** vedou předchozí metody k nevalidní konfiguraci.
       1. náhodně vyber tři jedince $x_1,x_2,x_3$
       2. jedinci/rodiče z předchozího kroku se podílejí na tvorbě jednoho nového potomka $\boxed{v=(x_1-x_2)*F+x_3}$, kde $F\in[0,2]$ je *mutační konstanta* a $v$ je tzv. *mutační vektor*
       3. proveď *křížení* - pro každý prvek `trial_vector = np.zeros(D)`: pokud je pravděpodobnost (`np.random.uniform()`$\in[0,1)$) menší než $CR\in [0,1]$ (crossover rate), přiřaď do `trial_vector` prvek z mutačního vektoru $v$, jinak zachovej parametr z rodiče (`trial_vector[i] = parent[i]`)
-      4. vyhodnoť *fitness*, pokud je potomek lepší, než aktualní jedinec, tak přidej vytvořeného potomka do nové populace `population_new[i] = trial_vector`, aktualizuj pole `fitness_new` a aktualizuj řešení (pokud je potomek lepší než aktuální nejlepší řešení)
+      4. vyhodnoť *fitness*, pokud je potomek lepší, než aktuální jedinec, tak přidej vytvořeného potomka do nové populace `population_new[i] = trial_vector`, aktualizuj pole `fitness_new` a aktualizuj řešení (pokud je potomek lepší než aktuální nejlepší řešení)
    3. nahraď starou populaci novou:
       1. `population = population_new`
       2. `fitness = fitness_new`
@@ -280,7 +294,7 @@ U **TSP** vedou předchozí metody k nevalidní konfiguraci.
 ### 9.1. Vlastnosti
 
 - *povědomí o svém okolí* (**awareness**) - každý agent musí mít povědomí o svém okolí
-- *samostatnost* (**autonomy**) - každý agent pracovat autonomně (not as a slave)
+- *samostatnost* (**autonomy**) - každý agent pracuje autonomně (ne jako otrok)
 - *vzájemná podpora* (**solidarity**) -  když je úkol dokončen, tak si agenti autonomně hledají nové úkoly
 - *rozšiřitelnost* (**expandability**) - po nalezení (lokálního) minima agenti rozšíří oblast hledání
 - *robustnost* (**resiliency**) - když je agent odstraněn, tak se systém musí omět zotavit (např. "vyléčit agenta")
@@ -333,7 +347,7 @@ kde $\text{rand}\in[0,1)$, $w$ je volitelný parametr setrvačnosti a hyperparam
 - Vzdálenost mezi nejlepším řešením a aktuálním musí být nenulová, proto se používá krok třeba $0.13$.
 - $ML$...migration loop
 
-#### SOMA hyperparametry
+#### 9.3.1. SOMA hyperparametry
 
 - `n_migrations`: 100
 - `population_size`: 20,
@@ -341,7 +355,7 @@ kde $\text{rand}\in[0,1)$, $w$ je volitelný parametr setrvačnosti a hyperparam
 - `step`: 0.11,
 - `path_length`: 3
 
-#### SOMA pseudokód
+#### 9.3.2. SOMA pseudokód
 
 1. Počáteční populace `np.random.uniform(lb,ub,d)`, kde $d$ je dimenze
 2. Ohodnocení počáteční populace
@@ -362,3 +376,26 @@ kde $\text{rand}\in[0,1)$, $w$ je volitelný parametr setrvačnosti a hyperparam
 ### 9.4. Ant Colony Optimization (ACO)
 
 - vhodný pro kombinatorické problémy
+- každý mravenec při cestě z hnízda za potravou produkuje feromony (komunikace s ostatními mravenci z kolonie)
+- pohyb mravenců je náhodný, avšak v průběhu času je jejich rozhodování ovlivněno feromony
+- na nejkratší cestě se feromony hromadí
+- důležitá vlastnost feromonů: **vypařování**
+
+### 9.5. Firefly Algorithm (FA)
+
+- méně svítivá světlušky je přitahována (*attractiveness*) k více svítivé světlušce
+- *attractiveness* se snižuje se vzdáleností mezi světluškami
+- pokud v blízkosti světlušky není žádná, která by svítila více, tak se světluška pohybuje náhodně
+
+## 10. Teaching-Learning Based Optimization (TLBO)
+
+Lze rozdělit do dvou fází:
+
+1. Fáze učení od učitele (*teacher phase*)
+2. Fáze učení od ostatních studentů (*learner phase*)
+
+Učitel je jedinec s nejlepší funkční hodnotou. Vylepšuje **průměr** populace.
+
+## 11. Multi-objective optimization (NSGA II)
+
+- NSGA II – Non-Dominated Sorting Genetic Algorithm
