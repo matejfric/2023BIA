@@ -11,14 +11,14 @@ class Opt(Enum):
     """
     Enumeration of optimization algorithms.
     """
-    BlindSearch = auto()
-    HillClimber = auto()
-    SimulatedAnnealing = auto()
-    DifferentialEvolution = auto()
-    ParticleSwarm = auto()
-    SOMA = auto()
-    Firefly = auto()
-    TLBO = auto() # Teaching-Learning Based Algorithm
+    BlindSearch = auto()  # BS
+    HillClimber = auto()  # HC
+    SimulatedAnnealing = auto()  # SA
+    DifferentialEvolution = auto()  # DE
+    ParticleSwarm = auto()  # PSO
+    SOMA = auto()  # Self-Organizing Migrating Algorithm
+    Firefly = auto()  # FA
+    TLBO = auto()  # Teaching-Learning Based Optimization
 
 
 class Optimizer(ABC):
@@ -319,6 +319,14 @@ class DifferentialEvolution(Optimizer):
         # Choose three random parent indices from the population
         selected_indices = np.random.choice(indices, 3, replace=False)
         return selected_indices
+    
+    def _toroidal_move(self, position):
+        """This method is not properly tested."""
+        # Wrap around if out of bounds
+        new_position = self.lb + np.mod(position - self.lb, self.ub - self.lb)
+        if np.any(new_position < self.lb) or np.any(new_position > self.ub):
+            new_position = np.clip(new_position, self.lb, self.ub)
+        return new_position
 
     def _calc_mutation_vector(self, population: list[list[float]], idxs: list[int], mutation_constant: float) -> list[int]:
         """
@@ -345,6 +353,8 @@ class DifferentialEvolution(Optimizer):
             elif vec[i] > self.ub:
                 diff = abs(self.ub - vec[i])
                 vec[i] = self.lb + diff
+        # if np.any(vec < self.lb) or np.any(vec > self.ub):
+        #     vec = self._toroidal_move(vec)
         return vec
 
     def _crossover(self, mutation_vec: list[float], parent: list[float], crossover_rate: float) -> list[float]:

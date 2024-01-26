@@ -37,6 +37,8 @@
   - [9.5. Firefly Algorithm (FA)](#95-firefly-algorithm-fa)
 - [10. Teaching-Learning Based Optimization (TLBO)](#10-teaching-learning-based-optimization-tlbo)
 - [11. Multi-objective optimization (NSGA II)](#11-multi-objective-optimization-nsga-ii)
+- [12. Symbolická regrese](#12-symbolická-regrese)
+  - [12.1. Genetické programování](#121-genetické-programování)
 
 ## 1. Quickstart
 
@@ -399,3 +401,12 @@ Učitel je jedinec s nejlepší funkční hodnotou. Vylepšuje **průměr** popu
 ## 11. Multi-objective optimization (NSGA II)
 
 - NSGA II – Non-Dominated Sorting Genetic Algorithm
+
+## 12. Symbolická regrese
+
+### 12.1. Genetické programování
+
+- Terminály jsou symbolické objekty, které jsou dále nedělitelné (např. proměnné)
+- Funkce
+- Fitness (např. u logických obvodů požadujeme, abychom pro správný vstup získali správný výstup - vyhodnocení třeba pomocí absolutní chyby nebo accuracy)
+- Parametry
